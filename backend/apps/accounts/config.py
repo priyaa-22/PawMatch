@@ -45,7 +45,11 @@ class AccountsConfig:
 
     @property
     def email_provider_backend(self) -> str:
-        return getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "SMTP").upper()
+        return getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API").upper()
+
+    @property
+    def brevo_api_key(self) -> str:
+        return getattr(settings, "BREVO_API_KEY", "")
 
     @property
     def max_avatar_size_bytes(self) -> int:
