@@ -25,3 +25,5 @@ drf-spectacular
 
 # Media Processing
 Pillow
+
+redis
