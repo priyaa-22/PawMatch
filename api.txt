@@ -187,4 +187,214 @@ Localhost Base URL:  http://localhost:8000
 - Production:  https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<user_uuid>/clear-roles/
 - Localhost:   http://localhost:8000/api/v1/rbac/users/<user_uuid>/clear-roles/
 
+
+--------------------------------------------------------------------------------
+4. SHELTER MANAGEMENT ENDPOINTS
+--------------------------------------------------------------------------------
+
+[4.1] Register Shelter Organization
+- Description: Onboard and register a new shelter organization for the authenticated user
+- Method:      POST
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/register/
+- Localhost:   http://localhost:8000/api/v1/shelters/register/
+
+[4.2] Current User Shelter Profile
+- Description: Retrieve or update authenticated user's shelter organization details
+- Method:      GET, PATCH
+- Auth:        IsAuthenticated (Bearer Token) / CanManageShelter for PATCH
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/me/
+- Localhost:   http://localhost:8000/api/v1/shelters/me/
+
+[4.3] Current Shelter Upload Document
+- Description: Upload verification document to current user's shelter (multipart/form-data)
+- Method:      POST
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/upload-document/
+- Localhost:   http://localhost:8000/api/v1/shelters/upload-document/
+
+[4.4] Current Shelter List Documents
+- Description: List uploaded verification documents for current user's shelter
+- Method:      GET
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/documents/
+- Localhost:   http://localhost:8000/api/v1/shelters/documents/
+
+[4.5] Shelter Dashboard Overview
+- Description: Retrieve shelter dashboard metrics, active pet counts, and recent notifications
+- Method:      GET
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/dashboard/
+- Localhost:   http://localhost:8000/api/v1/shelters/dashboard/
+
+[4.6] List Shelters Catalog
+- Description: Retrieve paginated catalog of shelters with searching, filtering, and ordering
+- Method:      GET
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/
+- Localhost:   http://localhost:8000/api/v1/shelters/
+- Note:        Supports ?status=<status>&city=<city>&state=<state>&is_active=<bool>&search=<term>&ordering=<field>&page=<num>
+
+[4.7] Create Shelter Organization
+- Description: Onboard a new shelter organization and initialize owner membership
+- Method:      POST
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/
+- Localhost:   http://localhost:8000/api/v1/shelters/
+
+[4.8] Retrieve Shelter Detail
+- Description: Retrieve detailed shelter organization profile by UUID
+- Method:      GET
+- Auth:        IsAuthenticated + CanViewShelter (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/
+
+[4.9] Update Shelter Profile
+- Description: Update shelter profile details
+- Method:      PATCH
+- Auth:        IsAuthenticated + CanManageShelter (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/
+
+[4.10] Submit Shelter Verification
+- Description: Submit active shelter verification workflow for review
+- Method:      POST
+- Auth:        IsAuthenticated + CanManageShelter (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/verification/submit/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/verification/submit/
+
+[4.11] Start Verification Review
+- Description: Place a submitted shelter verification workflow under review
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/verification/start-review/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/verification/start-review/
+
+[4.12] Request Verification Information
+- Description: Request additional details or documents for shelter verification
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/verification/request-information/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/verification/request-information/
+
+[4.13] Approve Shelter Verification
+- Description: Approve shelter verification and update operational status to verified
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/verification/approve/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/verification/approve/
+
+[4.14] Reject Shelter Verification
+- Description: Reject shelter verification request with reason
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/verification/reject/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/verification/reject/
+
+[4.15] Manage Shelter Verification Documents
+- Description: List documents or upload/attach verification document to shelter (multipart/form-data for POST)
+- Method:      GET, POST
+- Auth:        IsAuthenticated + IsShelterMember (GET) / IsShelterStaff (POST) (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/documents/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/documents/
+
+[4.16] Remove Shelter Verification Document
+- Description: Delete an unapproved shelter verification document by ID
+- Method:      DELETE
+- Auth:        IsAuthenticated + CanDeleteDocument (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/documents/<document_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/documents/<document_uuid>/
+
+[4.17] Manage Shelter Members
+- Description: List shelter members or add user directly as member
+- Method:      GET, POST
+- Auth:        IsAuthenticated + IsShelterMember (GET) / CanInviteMembers (POST) (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/members/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/members/
+- Note:        GET supports ?role=<role>&is_active=<bool>
+
+[4.18] Update Shelter Member Role
+- Description: Update membership role of a shelter staff/volunteer member
+- Method:      PATCH
+- Auth:        IsAuthenticated + CanManageMember (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/members/<member_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/members/<member_uuid>/
+
+[4.19] Remove Shelter Member
+- Description: Remove a member from shelter organization
+- Method:      DELETE
+- Auth:        IsAuthenticated + CanManageMember (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/members/<member_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/members/<member_uuid>/
+
+[4.20] Transfer Shelter Ownership
+- Description: Transfer primary shelter ownership from current owner to target user
+- Method:      POST
+- Auth:        IsAuthenticated + CanTransferOwnership (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/transfer-ownership/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/transfer-ownership/
+
+[4.21] Manage Shelter Invitations
+- Description: List pending/historical invitations or dispatch staff/volunteer invitation
+- Method:      GET, POST
+- Auth:        IsAuthenticated + IsShelterManager (GET) / CanInviteMembers (POST) (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/<shelter_uuid>/invitations/
+- Localhost:   http://localhost:8000/api/v1/shelters/<shelter_uuid>/invitations/
+- Note:        GET supports ?status=<status>
+
+[4.22] Accept Shelter Invitation
+- Description: Accept shelter invitation using tokenized link
+- Method:      POST
+- Auth:        IsAuthenticated (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/invitations/accept/
+- Localhost:   http://localhost:8000/api/v1/shelters/invitations/accept/
+
+[4.23] Revoke Shelter Invitation
+- Description: Revoke pending staff/volunteer shelter invitation
+- Method:      POST
+- Auth:        IsAuthenticated + CanRevokeInvitation (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/invitations/revoke/
+- Localhost:   http://localhost:8000/api/v1/shelters/invitations/revoke/
+
+
+--------------------------------------------------------------------------------
+5. ADMINISTRATOR VERIFICATION MANAGEMENT ENDPOINTS
+--------------------------------------------------------------------------------
+
+[5.1] List Pending Shelter Verifications
+- Description: List pending shelter verifications (submitted, under_review) for admin review
+- Method:      GET
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/pending/
+- Localhost:   http://localhost:8000/api/v1/shelters/admin/verifications/pending/
+
+[5.2] Retrieve Shelter Verification Detail
+- Description: Retrieve detailed shelter verification request for admin review
+- Method:      GET
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<verification_uuid>/
+- Localhost:   http://localhost:8000/api/v1/shelters/admin/verifications/<verification_uuid>/
+
+[5.3] Admin Approve Shelter Verification
+- Description: Approve shelter verification request by verification UUID
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<verification_uuid>/approve/
+- Localhost:   http://localhost:8000/api/v1/shelters/admin/verifications/<verification_uuid>/approve/
+
+[5.4] Admin Reject Shelter Verification
+- Description: Reject shelter verification request by verification UUID with reason
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<verification_uuid>/reject/
+- Localhost:   http://localhost:8000/api/v1/shelters/admin/verifications/<verification_uuid>/reject/
+
+[5.5] Admin Request Information for Verification
+- Description: Request additional information for verification request by verification UUID
+- Method:      POST
+- Auth:        IsAuthenticated + CanReviewVerification (Bearer Token)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<verification_uuid>/request-information/
+- Localhost:   http://localhost:8000/api/v1/shelters/admin/verifications/<verification_uuid>/request-information/
+
 ================================================================================
+

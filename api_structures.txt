@@ -780,6 +780,1133 @@ Response (200 OK):
   }
 }
 
+
+================================================================================
+4. SHELTER MANAGEMENT ENDPOINTS
+================================================================================
+
+--------------------------------------------------------------------------------
+4.1 Register Shelter Organization
+--------------------------------------------------------------------------------
+- Description:    Onboards a new shelter organization and assigns registering user as OWNER.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/register/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/register/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "name": "Happy Paws Rescue",
+  "legal_name": "Happy Paws Rescue Foundation Inc.",
+  "registration_number": "REG-123456",
+  "tax_id": "TAX-987654",
+  "email": "contact@happypaws.org",
+  "phone_number": "+15551234567",
+  "website": "https://happypaws.org",
+  "address_line1": "123 Rescue Way",
+  "address_line2": "Suite 100",
+  "city": "Austin",
+  "state": "TX",
+  "postal_code": "78701",
+  "country": "USA",
+  "latitude": "30.267200",
+  "longitude": "-97.743100",
+  "description": "A non-profit rescue shelter dedicated to saving animals."
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Shelter registered successfully.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Happy Paws Rescue",
+    "slug": "happy-paws-rescue",
+    "legal_name": "Happy Paws Rescue Foundation Inc.",
+    "registration_number": "REG-123456",
+    "tax_id": "TAX-987654",
+    "email": "contact@happypaws.org",
+    "phone_number": "+15551234567",
+    "website": "https://happypaws.org",
+    "address_line1": "123 Rescue Way",
+    "address_line2": "Suite 100",
+    "city": "Austin",
+    "state": "TX",
+    "postal_code": "78701",
+    "country": "USA",
+    "latitude": "30.267200",
+    "longitude": "-97.743100",
+    "description": "A non-profit rescue shelter dedicated to saving animals.",
+    "logo": null,
+    "banner_image": null,
+    "status": "unverified",
+    "is_verified": false,
+    "can_publish_pets": false,
+    "is_active": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:00:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.2 Current User Shelter Profile (`me`)
+--------------------------------------------------------------------------------
+- Description:    Retrieves or partially updates the shelter organization of the authenticated user.
+- HTTP Methods:   GET, PATCH
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/me/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/me/
+
+GET Request Headers:
+  Authorization: Bearer <access_token>
+
+PATCH Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+PATCH Request Body (partial updates allowed):
+{
+  "description": "Updated shelter biography and operational hours.",
+  "phone_number": "+15559876543"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter profile updated successfully.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Happy Paws Rescue",
+    "slug": "happy-paws-rescue",
+    "legal_name": "Happy Paws Rescue Foundation Inc.",
+    "registration_number": "REG-123456",
+    "tax_id": "TAX-987654",
+    "email": "contact@happypaws.org",
+    "phone_number": "+15559876543",
+    "website": "https://happypaws.org",
+    "address_line1": "123 Rescue Way",
+    "address_line2": "Suite 100",
+    "city": "Austin",
+    "state": "TX",
+    "postal_code": "78701",
+    "country": "USA",
+    "latitude": "30.267200",
+    "longitude": "-97.743100",
+    "description": "Updated shelter biography and operational hours.",
+    "logo": null,
+    "banner_image": null,
+    "status": "unverified",
+    "is_verified": false,
+    "can_publish_pets": false,
+    "is_active": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:15:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.3 Current Shelter Upload Document
+--------------------------------------------------------------------------------
+- Description:    Uploads a verification document file to the current user's shelter organization.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/upload-document/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/upload-document/
+
+POST Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: multipart/form-data
+
+POST Form-Data:
+  document_type: "registration_certificate"
+  file: <binary document file (pdf, jpg, png)>
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Document uploaded successfully.",
+  "data": {
+    "id": "d4c3b2a1-9876-5432-10fe-dcba98765432",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "verification": "e5f67890-a1b2-3456-7890-123456789abc",
+    "document_type": "registration_certificate",
+    "file": "https://res.cloudinary.com/demo/raw/upload/v1234567890/reg_cert.pdf",
+    "file_name": "reg_cert.pdf",
+    "file_size": 2048576,
+    "mime_type": "application/pdf",
+    "status": "pending",
+    "uploaded_by": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "owner@happypaws.org",
+      "first_name": "John",
+      "last_name": "Doe"
+    },
+    "verified_by": null,
+    "is_deletable": true,
+    "created_at": "2026-08-10T10:20:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.4 Current Shelter List Documents
+--------------------------------------------------------------------------------
+- Description:    Lists all uploaded verification documents for the current user's shelter organization.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/documents/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/documents/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Success",
+  "data": [
+    {
+      "id": "d4c3b2a1-9876-5432-10fe-dcba98765432",
+      "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "verification": "e5f67890-a1b2-3456-7890-123456789abc",
+      "document_type": "registration_certificate",
+      "file": "https://res.cloudinary.com/demo/raw/upload/v1234567890/reg_cert.pdf",
+      "file_name": "reg_cert.pdf",
+      "file_size": 2048576,
+      "mime_type": "application/pdf",
+      "status": "pending",
+      "uploaded_by": {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "email": "owner@happypaws.org",
+        "first_name": "John",
+        "last_name": "Doe"
+      },
+      "verified_by": null,
+      "is_deletable": true,
+      "created_at": "2026-08-10T10:20:00.000000Z"
+    }
+  ]
+}
+
+
+--------------------------------------------------------------------------------
+4.5 Shelter Dashboard Overview
+--------------------------------------------------------------------------------
+- Description:    Retrieves dashboard overview stats and metrics for current user's shelter.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/dashboard/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/dashboard/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "organization_name": "Happy Paws Rescue",
+    "verification_status": "unverified",
+    "total_pets": 0,
+    "available_pets": 0,
+    "adopted_pets": 0,
+    "pending_applications": 0,
+    "recent_notifications": [],
+    "is_verified": false,
+    "can_publish_pets": false
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.6 List Shelters Catalog
+--------------------------------------------------------------------------------
+- Description:    Paginated list of shelters with searching, filtering, and ordering.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/
+
+Query Parameters:
+  ?status=verified
+  &city=Austin
+  &state=TX
+  &is_active=true
+  &search=Happy
+  &ordering=-created_at
+  &page=1
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK - Paginated):
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Happy Paws Rescue",
+      "slug": "happy-paws-rescue",
+      "city": "Austin",
+      "state": "TX",
+      "country": "USA",
+      "status": "verified",
+      "is_verified": true,
+      "can_publish_pets": true,
+      "logo": null,
+      "created_at": "2026-08-10T10:00:00.000000Z"
+    }
+  ]
+}
+
+
+--------------------------------------------------------------------------------
+4.7 Create Shelter Organization
+--------------------------------------------------------------------------------
+- Description:    Onboards a new shelter organization and sets creator user as OWNER.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "name": "Sunshine Animal Sanctuary",
+  "legal_name": "Sunshine Sanctuary NFP",
+  "registration_number": "REG-789012",
+  "email": "info@sunshinesanctuary.org",
+  "phone_number": "+15553334444",
+  "city": "Dallas",
+  "state": "TX",
+  "country": "USA"
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Shelter created successfully.",
+  "data": {
+    "id": "8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
+    "name": "Sunshine Animal Sanctuary",
+    "slug": "sunshine-animal-sanctuary",
+    "legal_name": "Sunshine Sanctuary NFP",
+    "registration_number": "REG-789012",
+    "tax_id": "",
+    "email": "info@sunshinesanctuary.org",
+    "phone_number": "+15553334444",
+    "website": "",
+    "address_line1": "",
+    "address_line2": "",
+    "city": "Dallas",
+    "state": "TX",
+    "postal_code": "",
+    "country": "USA",
+    "latitude": null,
+    "longitude": null,
+    "description": "",
+    "logo": null,
+    "banner_image": null,
+    "status": "unverified",
+    "is_verified": false,
+    "can_publish_pets": false,
+    "is_active": true,
+    "created_at": "2026-08-10T10:25:00.000000Z",
+    "updated_at": "2026-08-10T10:25:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.8 Retrieve Shelter Detail
+--------------------------------------------------------------------------------
+- Description:    Fetches complete shelter organization profile by UUID.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + CanViewShelter Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Happy Paws Rescue",
+    "slug": "happy-paws-rescue",
+    "legal_name": "Happy Paws Rescue Foundation Inc.",
+    "registration_number": "REG-123456",
+    "tax_id": "TAX-987654",
+    "email": "contact@happypaws.org",
+    "phone_number": "+15559876543",
+    "website": "https://happypaws.org",
+    "address_line1": "123 Rescue Way",
+    "address_line2": "Suite 100",
+    "city": "Austin",
+    "state": "TX",
+    "postal_code": "78701",
+    "country": "USA",
+    "latitude": "30.267200",
+    "longitude": "-97.743100",
+    "description": "Updated shelter biography and operational hours.",
+    "logo": null,
+    "banner_image": null,
+    "status": "unverified",
+    "is_verified": false,
+    "can_publish_pets": false,
+    "is_active": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:15:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.9 Update Shelter Profile
+--------------------------------------------------------------------------------
+- Description:    Updates shelter profile details by UUID.
+- HTTP Method:    PATCH
+- Authentication: Required (Bearer Token + CanManageShelter Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "website": "https://www.happypawsrescue.org"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter profile updated successfully.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Happy Paws Rescue",
+    "website": "https://www.happypawsrescue.org"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.10 Submit Shelter Verification
+--------------------------------------------------------------------------------
+- Description:    Submits active shelter verification workflow for review.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanManageShelter Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/verification/submit/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/verification/submit/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Verification request submitted successfully.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "submitted",
+    "reviewer_notes": "",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "is_active_workflow": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:30:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.11 Start Verification Review
+--------------------------------------------------------------------------------
+- Description:    Places a submitted verification workflow under active review.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/verification/start-review/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/verification/start-review/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Verification review started.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "under_review",
+    "reviewer_notes": "",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": null,
+    "reviewed_by": {
+      "id": "9f8e7d6c-5b4a-3f2e-1d0c-9b8a7f6e5d4c",
+      "email": "admin@pawmatch.org",
+      "first_name": "Admin",
+      "last_name": "User"
+    },
+    "is_active_workflow": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:35:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.12 Request Verification Information
+--------------------------------------------------------------------------------
+- Description:    Requests additional details or document revisions for shelter verification.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/verification/request-information/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/verification/request-information/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "notes": "Please re-upload a clearer copy of your 501(c)(3) tax-exempt certificate."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Additional information requested successfully.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "needs_information",
+    "reviewer_notes": "Please re-upload a clearer copy of your 501(c)(3) tax-exempt certificate.",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": null,
+    "reviewed_by": {
+      "id": "9f8e7d6c-5b4a-3f2e-1d0c-9b8a7f6e5d4c",
+      "email": "admin@pawmatch.org",
+      "first_name": "Admin",
+      "last_name": "User"
+    },
+    "is_active_workflow": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:40:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.13 Approve Shelter Verification
+--------------------------------------------------------------------------------
+- Description:    Approves shelter verification request and updates shelter status to verified.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/verification/approve/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/verification/approve/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body (optional notes):
+{
+  "notes": "All documentation verified. Account approved."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter verification approved successfully.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "approved",
+    "reviewer_notes": "All documentation verified. Account approved.",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": "2026-08-10T10:45:00.000000Z",
+    "reviewed_by": {
+      "id": "9f8e7d6c-5b4a-3f2e-1d0c-9b8a7f6e5d4c",
+      "email": "admin@pawmatch.org",
+      "first_name": "Admin",
+      "last_name": "User"
+    },
+    "is_active_workflow": false,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:45:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.14 Reject Shelter Verification
+--------------------------------------------------------------------------------
+- Description:    Rejects shelter verification request with reason.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/verification/reject/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/verification/reject/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "reason": "Invalid registration credentials provided."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter verification rejected.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "rejected",
+    "reviewer_notes": "",
+    "rejection_reason": "Invalid registration credentials provided.",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": "2026-08-10T10:50:00.000000Z",
+    "reviewed_by": {
+      "id": "9f8e7d6c-5b4a-3f2e-1d0c-9b8a7f6e5d4c",
+      "email": "admin@pawmatch.org",
+      "first_name": "Admin",
+      "last_name": "User"
+    },
+    "is_active_workflow": false,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:50:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.15 Manage Shelter Verification Documents (Sub-Resource)
+--------------------------------------------------------------------------------
+- Description:    Lists or attaches verification document to a specific shelter by UUID.
+- HTTP Methods:   GET, POST
+- Authentication: Required (IsShelterMember for GET, IsShelterStaff for POST)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/documents/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/documents/
+
+GET Request Headers:
+  Authorization: Bearer <access_token>
+
+POST Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: multipart/form-data
+
+POST Form-Data:
+  document_type: "ngo_certificate"
+  file: <binary document file>
+
+POST Response (201 Created):
+{
+  "success": true,
+  "message": "Document attached successfully.",
+  "data": {
+    "id": "c3b2a198-7654-3210-fedc-ba9876543210",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "verification": "e5f67890-a1b2-3456-7890-123456789abc",
+    "document_type": "ngo_certificate",
+    "file": "https://res.cloudinary.com/demo/raw/upload/v1234567890/ngo_cert.pdf",
+    "file_name": "ngo_cert.pdf",
+    "file_size": 1048576,
+    "mime_type": "application/pdf",
+    "status": "pending",
+    "uploaded_by": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "owner@happypaws.org",
+      "first_name": "John",
+      "last_name": "Doe"
+    },
+    "verified_by": null,
+    "is_deletable": true,
+    "created_at": "2026-08-10T10:55:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.16 Remove Shelter Verification Document
+--------------------------------------------------------------------------------
+- Description:    Deletes an unapproved shelter verification document.
+- HTTP Method:    DELETE
+- Authentication: Required (Bearer Token + CanDeleteDocument Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/documents/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/documents/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Document deleted successfully."
+}
+
+
+--------------------------------------------------------------------------------
+4.17 Manage Shelter Members
+--------------------------------------------------------------------------------
+- Description:    Lists shelter member staff/volunteers or adds a member directly.
+- HTTP Methods:   GET, POST
+- Authentication: Required (IsShelterMember for GET, CanInviteMembers for POST)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/members/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/members/
+
+GET Query Parameters:
+  ?role=staff
+  &is_active=true
+
+POST Request Body:
+{
+  "user_id": "4ab321cd-5678-90ef-1234-567890abcdef",
+  "role": "staff"
+}
+
+POST Response (201 Created):
+{
+  "success": true,
+  "message": "Member added successfully.",
+  "data": {
+    "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "user": {
+      "id": "4ab321cd-5678-90ef-1234-567890abcdef",
+      "email": "staffmember@happypaws.org",
+      "first_name": "Jane",
+      "last_name": "Smith"
+    },
+    "role": "staff",
+    "is_active": true,
+    "is_owner": false,
+    "is_manager": false,
+    "joined_at": "2026-08-10T11:00:00.000000Z",
+    "created_at": "2026-08-10T11:00:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.18 Update Shelter Member Role
+--------------------------------------------------------------------------------
+- Description:    Updates role of a shelter staff/volunteer member.
+- HTTP Method:    PATCH
+- Authentication: Required (Bearer Token + CanManageMember Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/members/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/members/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "role": "manager"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Member role updated successfully.",
+  "data": {
+    "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "user": {
+      "id": "4ab321cd-5678-90ef-1234-567890abcdef",
+      "email": "staffmember@happypaws.org",
+      "first_name": "Jane",
+      "last_name": "Smith"
+    },
+    "role": "manager",
+    "is_active": true,
+    "is_owner": false,
+    "is_manager": true,
+    "joined_at": "2026-08-10T11:00:00.000000Z",
+    "created_at": "2026-08-10T11:00:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.19 Remove Shelter Member
+--------------------------------------------------------------------------------
+- Description:    Removes a staff/volunteer member from a shelter organization.
+- HTTP Method:    DELETE
+- Authentication: Required (Bearer Token + CanManageMember Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/members/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/members/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Member removed successfully."
+}
+
+
+--------------------------------------------------------------------------------
+4.20 Transfer Shelter Ownership
+--------------------------------------------------------------------------------
+- Description:    Transfers primary shelter ownership from current owner to target user.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanTransferOwnership Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/transfer-ownership/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/transfer-ownership/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "new_owner_user_id": "4ab321cd-5678-90ef-1234-567890abcdef"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Ownership transferred successfully.",
+  "data": {
+    "former_owner": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "user": {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "email": "owner@happypaws.org"
+      },
+      "role": "manager",
+      "is_owner": false
+    },
+    "new_owner": {
+      "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+      "user": {
+        "id": "4ab321cd-5678-90ef-1234-567890abcdef",
+        "email": "staffmember@happypaws.org"
+      },
+      "role": "owner",
+      "is_owner": true
+    }
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.21 Manage Shelter Invitations
+--------------------------------------------------------------------------------
+- Description:    Lists shelter staff/volunteer invitations or dispatches a new invitation token.
+- HTTP Methods:   GET, POST
+- Authentication: Required (IsShelterManager for GET, CanInviteMembers for POST)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/<id>/invitations/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/<id>/invitations/
+
+GET Query Parameters:
+  ?status=pending
+
+POST Request Body:
+{
+  "email": "newvolunteer@example.com",
+  "role": "volunteer",
+  "expiry_days": 7
+}
+
+POST Response (201 Created):
+{
+  "success": true,
+  "message": "Invitation created successfully.",
+  "data": {
+    "id": "f1e2d3c4-b5a6-7890-1234-567890abcdef",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "email": "newvolunteer@example.com",
+    "role": "volunteer",
+    "token": "inv_9a8b7c6d5e4f3a2b1c0d",
+    "status": "pending",
+    "invited_by": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "owner@happypaws.org",
+      "first_name": "John",
+      "last_name": "Doe"
+    },
+    "accepted_by": null,
+    "expires_at": "2026-08-17T11:15:00.000000Z",
+    "responded_at": null,
+    "accepted_at": null,
+    "is_expired": false,
+    "is_valid": true,
+    "created_at": "2026-08-10T11:15:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.22 Accept Shelter Invitation
+--------------------------------------------------------------------------------
+- Description:    Accepts a staff/volunteer invitation token and initializes membership.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/invitations/accept/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/invitations/accept/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "token": "inv_9a8b7c6d5e4f3a2b1c0d"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Invitation accepted successfully.",
+  "data": {
+    "id": "c4d5e6f7-a8b9-0123-4567-890abcdef123",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "user": {
+      "id": "5bc432de-6789-01fa-2345-67890abcdef2",
+      "email": "newvolunteer@example.com",
+      "first_name": "Alex",
+      "last_name": "Taylor"
+    },
+    "role": "volunteer",
+    "is_active": true,
+    "is_owner": false,
+    "is_manager": false,
+    "joined_at": "2026-08-10T11:30:00.000000Z",
+    "created_at": "2026-08-10T11:30:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+4.23 Revoke Shelter Invitation
+--------------------------------------------------------------------------------
+- Description:    Revokes a pending staff/volunteer shelter invitation.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanRevokeInvitation Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/invitations/revoke/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/invitations/revoke/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "invitation_id": "f1e2d3c4-b5a6-7890-1234-567890abcdef"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Invitation revoked successfully.",
+  "data": {
+    "id": "f1e2d3c4-b5a6-7890-1234-567890abcdef",
+    "status": "revoked"
+  }
+}
+
+
+================================================================================
+5. ADMINISTRATOR VERIFICATION MANAGEMENT ENDPOINTS
+================================================================================
+
+--------------------------------------------------------------------------------
+5.1 List Pending Shelter Verifications
+--------------------------------------------------------------------------------
+- Description:    Lists pending shelter verifications (submitted, under_review) for staff review.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/pending/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/admin/verifications/pending/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Success",
+  "data": [
+    {
+      "id": "e5f67890-a1b2-3456-7890-123456789abc",
+      "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "status": "submitted",
+      "reviewer_notes": "",
+      "rejection_reason": "",
+      "submitted_at": "2026-08-10T10:30:00.000000Z",
+      "reviewed_at": null,
+      "reviewed_by": null,
+      "is_active_workflow": true,
+      "created_at": "2026-08-10T10:00:00.000000Z",
+      "updated_at": "2026-08-10T10:30:00.000000Z"
+    }
+  ]
+}
+
+
+--------------------------------------------------------------------------------
+5.2 Retrieve Shelter Verification Details
+--------------------------------------------------------------------------------
+- Description:    Retrieves verification workflow request details by verification UUID.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<id>/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/admin/verifications/<id>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "submitted",
+    "reviewer_notes": "",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": null,
+    "reviewed_by": null,
+    "is_active_workflow": true,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T10:30:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+5.3 Admin Approve Shelter Verification
+--------------------------------------------------------------------------------
+- Description:    Approves shelter verification request by verification UUID.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<id>/approve/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/admin/verifications/<id>/approve/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "notes": "Approved by platform administrator after background verification."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter verification approved successfully.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "shelter": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "status": "approved",
+    "reviewer_notes": "Approved by platform administrator after background verification.",
+    "rejection_reason": "",
+    "submitted_at": "2026-08-10T10:30:00.000000Z",
+    "reviewed_at": "2026-08-10T11:45:00.000000Z",
+    "reviewed_by": {
+      "id": "9f8e7d6c-5b4a-3f2e-1d0c-9b8a7f6e5d4c",
+      "email": "admin@pawmatch.org",
+      "first_name": "Admin",
+      "last_name": "User"
+    },
+    "is_active_workflow": false,
+    "created_at": "2026-08-10T10:00:00.000000Z",
+    "updated_at": "2026-08-10T11:45:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+5.4 Admin Reject Shelter Verification
+--------------------------------------------------------------------------------
+- Description:    Rejects shelter verification request by verification UUID with reason.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<id>/reject/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/admin/verifications/<id>/reject/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "reason": "Registration document verification failed."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Shelter verification rejected.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "status": "rejected",
+    "rejection_reason": "Registration document verification failed."
+  }
+}
+
+
+--------------------------------------------------------------------------------
+5.5 Admin Request Information for Verification
+--------------------------------------------------------------------------------
+- Description:    Requests additional information for verification request by verification UUID.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + CanReviewVerification Permission)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/shelters/admin/verifications/<id>/request-information/
+- Localhost URL:  http://localhost:8000/api/v1/shelters/admin/verifications/<id>/request-information/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "notes": "Missing valid state license certificate."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Additional information requested successfully.",
+  "data": {
+    "id": "e5f67890-a1b2-3456-7890-123456789abc",
+    "status": "needs_information",
+    "reviewer_notes": "Missing valid state license certificate."
+  }
+}
+
 ================================================================================
 End of Document
 ================================================================================
+
