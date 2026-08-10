@@ -1,0 +1,17 @@
+/* Register Page Specific Styling */
+
+.auth-card-wide {
+  max-width: 580px;
+  transition: max-width var(--transition-normal);
+}
+
+.role-selector-wrapper {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.role-selector-label {
+  font-weight: 600;
+  color: var(--color-accent-brown);
+}

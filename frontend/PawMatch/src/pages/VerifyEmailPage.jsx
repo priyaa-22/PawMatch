@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import authService from '../services/auth.service';
 
 export const VerifyEmailPage = () => {
@@ -7,113 +7,161 @@ export const VerifyEmailPage = () => {
   const token = searchParams.get('token');
 
   const [verifying, setVerifying] = useState(Boolean(token));
-  const [status, setStatus] = useState({ success: null, message: '' });
-  const [resendEmail, setResendEmail] = useState('');
-  const [resending, setResending] = useState(false);
-  const [resendStatus, setResendStatus] = useState(null);
+  const [status, setStatus] = useState({
+    success: null, // null = initial/verifying, true = success, false = failed
+    message: '',
+  });
 
   const navigate = useNavigate();
+  const hasRequested = useRef(false);
 
   useEffect(() => {
-    if (token) {
-      setVerifying(true);
-      authService
-        .verifyEmail(token, 'GET')
-        .then((res) => {
-          if (res.success) {
-            setStatus({ success: true, message: res.message || 'Email verified successfully! You can now log in.' });
-          } else {
-            setStatus({ success: false, message: res.message || 'Email verification failed. The token may be invalid or expired.' });
-          }
-        })
-        .catch((err) => {
-          setStatus({ success: false, message: err.message || 'Verification error occurred.' });
-        })
-        .finally(() => setVerifying(false));
+    if (!token) {
+      setVerifying(false);
+      setStatus({
+        success: false,
+        message: 'Your verification link is invalid or missing.',
+      });
+      return;
     }
-  }, [token]);
 
-  const handleResend = async (e) => {
-    e.preventDefault();
-    setResending(true);
-    setResendStatus(null);
-    try {
-      const res = await authService.resendVerification(resendEmail);
-      if (res.success) {
-        setResendStatus({ success: true, message: res.message || 'Verification link sent to your email.' });
-      } else {
-        setResendStatus({ success: false, message: res.message || 'Failed to resend verification email.' });
-      }
-    } catch (err) {
-      setResendStatus({ success: false, message: err.message });
-    } finally {
-      setResending(false);
-    }
-  };
+    // Prevent duplicate verification requests
+    if (hasRequested.current) return;
+    hasRequested.current = true;
+
+    setVerifying(true);
+    authService
+      .verifyEmail(token, 'GET')
+      .then((res) => {
+        if (res.success) {
+          setStatus({
+            success: true,
+            message: res.message || 'Your email has been verified successfully.',
+          });
+        } else {
+          setStatus({
+            success: false,
+            message: res.message || 'Your verification link is invalid or has expired.',
+          });
+        }
+      })
+      .catch((err) => {
+        setStatus({
+          success: false,
+          message: err.message || 'Your verification link is invalid or has expired.',
+        });
+      })
+      .finally(() => {
+        setVerifying(false);
+      });
+  }, [token]);
 
   return (
     <div className="auth-page-container">
-      <div className="auth-card">
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>Email Verification</h2>
-        </div>
-
+      <div className="auth-card" style={{ textAlign: 'center' }}>
         {verifying && (
-          <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-            <div className="loading-spinner" style={{ width: '2rem', height: '2rem', borderColor: 'var(--color-accent-brown)' }}></div>
-            <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>Verifying your email token...</p>
+          <div style={{ padding: '2rem 0' }}>
+            <div
+              className="loading-spinner"
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderWidth: '3px',
+                borderColor: 'rgba(139, 90, 43, 0.2)',
+                borderTopColor: 'var(--color-accent-brown)',
+                margin: '0 auto 1rem auto',
+              }}
+            ></div>
+            <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>Verifying Email</h2>
+            <p style={{ color: 'var(--color-text-muted)' }}>
+              Please wait while we verify your email address...
+            </p>
           </div>
         )}
 
-        {!verifying && status.success !== null && (
-          <div>
-            <div className={`alert ${status.success ? 'alert-success' : 'alert-error'}`}>
-              {status.message}
+        {!verifying && status.success === true && (
+          <div style={{ padding: '1rem 0' }}>
+            <div
+              style={{
+                width: '4rem',
+                height: '4rem',
+                borderRadius: '50%',
+                backgroundColor: '#ECFDF5',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                margin: '0 auto 1.25rem auto',
+                fontWeight: 'bold',
+              }}
+            >
+              ✓
             </div>
-            {status.success && (
-              <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                <button className="btn-primary" onClick={() => navigate('/login')}>
-                  Proceed to Login
-                </button>
-              </div>
-            )}
+            <h2 className="heading-md" style={{ marginBottom: '0.75rem', color: '#065F46' }}>
+              Email Verified
+            </h2>
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem', fontSize: '0.95rem' }}>
+              {status.message || 'Your email has been verified successfully.'}
+            </p>
+
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => navigate('/login')}
+              style={{ width: '100%' }}
+            >
+              Go to Login
+            </button>
           </div>
         )}
 
-        {(!token || status.success === false) && !verifying && (
-          <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
-            <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem', textAlign: 'center' }}>Resend Verification Link</h4>
-            {resendStatus && (
-              <div className={`alert ${resendStatus.success ? 'alert-success' : 'alert-error'}`}>
-                {resendStatus.message}
-              </div>
-            )}
-            <form onSubmit={handleResend}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="resend-email">Your Email Address</label>
-                <input
-                  id="resend-email"
-                  type="email"
-                  className="form-input"
-                  value={resendEmail}
-                  onChange={(e) => setResendEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  required
-                  disabled={resending}
-                />
-              </div>
-              <button type="submit" className="btn-secondary" disabled={resending} style={{ width: '100%', marginTop: '0.5rem' }}>
-                {resending ? 'Sending...' : 'Resend Verification Email'}
+        {!verifying && status.success === false && (
+          <div style={{ padding: '1rem 0' }}>
+            <div
+              style={{
+                width: '4rem',
+                height: '4rem',
+                borderRadius: '50%',
+                backgroundColor: '#FEF2F2',
+                color: '#DC2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                margin: '0 auto 1.25rem auto',
+                fontWeight: 'bold',
+              }}
+            >
+              ✕
+            </div>
+            <h2 className="heading-md" style={{ marginBottom: '0.75rem', color: '#991B1B' }}>
+              Verification Failed
+            </h2>
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem', fontSize: '0.95rem' }}>
+              {status.message || 'Your verification link is invalid or has expired.'}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => navigate('/resend-verification')}
+                style={{ width: '100%' }}
+              >
+                Resend Verification Email
               </button>
-            </form>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => navigate('/login')}
+                style={{ width: '100%' }}
+              >
+                Back to Login
+              </button>
+            </div>
           </div>
         )}
-
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
-          <Link to="/login" style={{ color: 'var(--color-accent-brown)', fontWeight: '600' }}>
-            ← Back to Login
-          </Link>
-        </div>
       </div>
     </div>
   );

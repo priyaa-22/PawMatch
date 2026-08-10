@@ -1,8 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/auth.service';
 import profileService from '../services/profile.service';
 import rbacService from '../services/rbac.service';
 import tokenStorage from '../utils/tokenStorage';
+import {
+  determineUserRole,
+  getRoleDefaultRoute,
+  getRoleDisplayName,
+  getRoleBadgeClass,
+  setDevRoleOverride,
+  normalizeRole,
+} from '../utils/roleUtils';
 
 const AuthContext = createContext(null);
 
@@ -10,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(tokenStorage.getUser());
   const [userRoles, setUserRoles] = useState([]);
   const [userPermissions, setUserPermissions] = useState([]);
+  const [devRoleState, setDevRoleState] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const isAuthenticated = Boolean(user && tokenStorage.getAccessToken());
@@ -79,6 +88,29 @@ export const AuthProvider = ({ children }) => {
     };
   }, [loadUser]);
 
+  // Centralized current role resolution (Single Source of Truth)
+  const currentRole = useMemo(() => {
+    if (!isAuthenticated) return null;
+    return determineUserRole(user, userRoles);
+  }, [isAuthenticated, user, userRoles, devRoleState]);
+
+  const roleDisplayName = useMemo(() => {
+    return getRoleDisplayName(currentRole);
+  }, [currentRole]);
+
+  const roleBadgeClass = useMemo(() => {
+    return getRoleBadgeClass(currentRole);
+  }, [currentRole]);
+
+  const defaultRoute = useMemo(() => {
+    return getRoleDefaultRoute(currentRole);
+  }, [currentRole]);
+
+  const setDevRole = (role) => {
+    setDevRoleOverride(role);
+    setDevRoleState(role);
+  };
+
   const login = async (email, password) => {
     setLoading(true);
     try {
@@ -129,12 +161,24 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const hasRole = (role) => {
-    if (!role) return true;
-    if (Array.isArray(role)) {
-      return role.some((r) => userRoles.includes(r.toUpperCase()));
-    }
-    return userRoles.includes(role.toUpperCase());
+  /**
+   * Reusable role checker helper
+   */
+  const hasRole = (roleInput) => {
+    if (!roleInput) return true;
+    if (!currentRole) return false;
+
+    const allowed = Array.isArray(roleInput) ? roleInput : [roleInput];
+    const normalizedAllowed = allowed.map((r) => normalizeRole(r)).filter(Boolean);
+
+    // Match resolved current role
+    if (normalizedAllowed.includes(currentRole)) return true;
+
+    // Match raw backend roles
+    return userRoles.some((r) => {
+      const n = normalizeRole(r);
+      return n && normalizedAllowed.includes(n);
+    });
   };
 
   const hasPermission = (permission) => {
@@ -151,6 +195,11 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     userRoles,
     userPermissions,
+    currentRole,
+    roleDisplayName,
+    roleBadgeClass,
+    defaultRoute,
+    setDevRole,
     login,
     register,
     logout,

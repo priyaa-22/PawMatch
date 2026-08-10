@@ -3,13 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../Logo/Logo';
 import Button from '../Button/Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { getNavigationForRole, PUBLIC_NAV_ITEMS } from '../../config/navigationConfig';
 import './Navbar.css';
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, currentRole, roleDisplayName, roleBadgeClass, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,14 +26,9 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: 'Home', href: '/#home' },
-    { name: 'Adopt Pets', href: '/#adopt' },
-    { name: 'How It Works', href: '/#how-it-works' },
-    { name: 'Shelters', href: '/#shelters' },
-    { name: 'About', href: '/#about' },
-    { name: 'Contact', href: '/#contact' },
-  ];
+  const navLinks = isAuthenticated
+    ? getNavigationForRole(currentRole)
+    : PUBLIC_NAV_ITEMS;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -40,6 +36,25 @@ export const Navbar = () => {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const renderNavLink = (link, isMobile = false) => {
+    const isAnchor = link.href.startsWith('/#');
+    const className = isMobile ? 'mobile-nav-link' : 'nav-link';
+    const onClick = isMobile ? closeMobileMenu : undefined;
+
+    if (isAnchor) {
+      return (
+        <a href={link.href} className={className} onClick={onClick}>
+          {link.name}
+        </a>
+      );
+    }
+    return (
+      <Link to={link.href} className={className} onClick={onClick}>
+        {link.name}
+      </Link>
+    );
   };
 
   return (
@@ -55,9 +70,7 @@ export const Navbar = () => {
           <ul className="nav-list">
             {navLinks.map((link) => (
               <li key={link.name} className="nav-item">
-                <a href={link.href} className="nav-link">
-                  {link.name}
-                </a>
+                {renderNavLink(link, false)}
               </li>
             ))}
           </ul>
@@ -67,9 +80,14 @@ export const Navbar = () => {
         <div className="nav-auth-actions">
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-                Dashboard ({user?.first_name || 'Account'})
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className={`badge ${roleBadgeClass}`} style={{ fontSize: '0.65rem' }}>
+                  {roleDisplayName}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
+                  Dashboard ({user?.first_name || 'Account'})
+                </Button>
+              </div>
               <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
                 Profile
               </Button>
@@ -117,13 +135,18 @@ export const Navbar = () => {
                 &times;
               </button>
             </div>
+            {isAuthenticated && (
+              <div style={{ padding: '0 1rem 0.5rem 1rem' }}>
+                <span className={`badge ${roleBadgeClass}`}>
+                  {roleDisplayName}
+                </span>
+              </div>
+            )}
             <nav className="mobile-nav">
               <ul className="mobile-nav-list">
                 {navLinks.map((link) => (
                   <li key={link.name} className="mobile-nav-item">
-                    <a href={link.href} className="mobile-nav-link" onClick={closeMobileMenu}>
-                      {link.name}
-                    </a>
+                    {renderNavLink(link, true)}
                   </li>
                 ))}
               </ul>
