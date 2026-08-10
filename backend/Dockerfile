@@ -101,5 +101,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-# Launch Application via Gunicorn Web Server
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "config.wsgi:application"]
+# Execute Database Schema Migrations and Launch Application via Gunicorn Web Server
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn -c gunicorn.conf.py config.wsgi:application"]
