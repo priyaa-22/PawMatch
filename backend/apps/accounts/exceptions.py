@@ -47,6 +47,29 @@ class TokenAlreadyUsedException(InvalidTokenException):
     default_code = "token_already_used"
 
 
+class InvalidOTPException(AccountsException):
+    status_code = 400
+    default_detail = "Invalid verification code."
+    default_code = "invalid_otp"
+
+
+class ExpiredOTPException(InvalidOTPException):
+    default_detail = "Verification code has expired."
+    default_code = "otp_expired"
+
+
+class MaxOTPAttemptsExceededException(InvalidOTPException):
+    default_detail = (
+        "Maximum verification attempts exceeded. Please request a new code."
+    )
+    default_code = "max_otp_attempts_exceeded"
+
+
+class OTPAlreadyUsedException(InvalidOTPException):
+    default_detail = "Verification code has already been used."
+    default_code = "otp_already_used"
+
+
 class EmailAlreadyVerifiedException(AccountsException):
     status_code = 400
     default_detail = "Email address is already verified."

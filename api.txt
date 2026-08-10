@@ -41,20 +41,19 @@ Localhost Base URL:  http://localhost:8000
 - Production:  https://pawmatch-8zwt.onrender.com/api/v1/accounts/register/
 - Localhost:   http://localhost:8000/api/v1/accounts/register/
 
-[2.2] Verify Email
-- Description: Verify email address via token (query param for GET, body for POST)
-- Method:      GET, POST
-- Auth:        Public (AllowAny)
-- Production:  https://pawmatch-8zwt.onrender.com/api/v1/accounts/verify-email/
-- Localhost:   http://localhost:8000/api/v1/accounts/verify-email/
-- Note:        GET supports ?token=<verification_token>
-
-[2.3] Resend Verification Email
-- Description: Resend email verification link to inactive account
+[2.2] Verify Email via OTP
+- Description: Verify user email address using 6-digit numeric OTP
 - Method:      POST
 - Auth:        Public (AllowAny)
-- Production:  https://pawmatch-8zwt.onrender.com/api/v1/accounts/resend-verification/
-- Localhost:   http://localhost:8000/api/v1/accounts/resend-verification/
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/accounts/verify-email-otp/
+- Localhost:   http://localhost:8000/api/v1/accounts/verify-email-otp/
+
+[2.3] Resend Verification OTP
+- Description: Resend 6-digit email verification OTP to inactive account
+- Method:      POST
+- Auth:        Public (AllowAny)
+- Production:  https://pawmatch-8zwt.onrender.com/api/v1/accounts/resend-verification-otp/
+- Localhost:   http://localhost:8000/api/v1/accounts/resend-verification-otp/
 
 [2.4] User Login
 - Description: Authenticate credentials and receive JWT access & refresh tokens

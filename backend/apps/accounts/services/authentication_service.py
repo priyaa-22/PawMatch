@@ -47,7 +47,10 @@ class AuthenticationService:
             # Fallback check to distinguish inactive user from bad credentials
             try:
                 existing_user = User.objects.get(email=normalized_email)
-                if not existing_user.is_active:
+                if (
+                    existing_user.check_password(password)
+                    and not existing_user.is_active
+                ):
                     AuditService.log_event(
                         action=AuditAction.LOGIN_FAILED_DISABLED,
                         request=request,

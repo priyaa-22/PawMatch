@@ -16,12 +16,12 @@ from apps.accounts.api.serializers import (
     LoginSerializer,
     LogoutSerializer,
     RegisterSerializer,
-    ResendVerificationSerializer,
+    ResendVerificationOTPSerializer,
     ResetPasswordSerializer,
     UpdateProfileSerializer,
     UploadAvatarSerializer,
     UserProfileResponseSerializer,
-    VerifyEmailSerializer,
+    VerifyEmailOTPSerializer,
 )
 from apps.accounts.constants import AuditAction, AuthMessage
 from apps.accounts.services.authentication_service import AuthenticationService
@@ -34,6 +34,7 @@ from apps.accounts.throttles import (
     PasswordResetRateThrottle,
     RegisterRateThrottle,
     ResendVerificationRateThrottle,
+    VerifyEmailOTPRateThrottle,
 )
 from apps.audit_logs.services.audit_service import AuditService
 from apps.core.responses import api_response
@@ -255,19 +256,24 @@ class RegisterAPIView(GenericAPIView):
         )
 
 
-class VerifyEmailAPIView(GenericAPIView):
+class VerifyEmailOTPAPIView(GenericAPIView):
     """
-    GET /api/v1/accounts/verify-email/?token=<token>
-    POST /api/v1/accounts/verify-email/
-    Verifies the email token, activates the user account, and dispatches a welcome email.
+    POST /api/v1/accounts/verify-email-otp/
+    Validates 6-digit verification OTP, activates user account, and dispatches a welcome email.
     """
 
     permission_classes = (AllowAny,)
-    serializer_class = VerifyEmailSerializer
+    throttle_classes = (VerifyEmailOTPRateThrottle,)
+    serializer_class = VerifyEmailOTPSerializer
 
-    def _process_verification(self, request, raw_token: str):
-        user = RegistrationService.verify_email_token(
-            raw_token=raw_token, request=request
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = RegistrationService.verify_email_otp(
+            email=serializer.validated_data["email"],
+            raw_otp=serializer.validated_data["otp"],
+            request=request,
         )
         user_data = CurrentUserSerializer(user, context={"request": request}).data
 
@@ -278,33 +284,22 @@ class VerifyEmailAPIView(GenericAPIView):
             status_code=status.HTTP_200_OK,
         )
 
-    def get(self, request, *args, **kwargs):
-        raw_token = request.query_params.get("token", "")
-        serializer = self.get_serializer(data={"token": raw_token})
-        serializer.is_valid(raise_exception=True)
-        return self._process_verification(request, serializer.validated_data["token"])
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return self._process_verification(request, serializer.validated_data["token"])
-
-
-class ResendVerificationAPIView(GenericAPIView):
+class ResendVerificationOTPAPIView(GenericAPIView):
     """
-    POST /api/v1/accounts/resend-verification/
-    Invalidates previous tokens, generates a new verification token, and resends verification email.
+    POST /api/v1/accounts/resend-verification-otp/
+    Invalidates previous OTPs, generates a fresh 6-digit OTP, and resends verification email.
     """
 
     permission_classes = (AllowAny,)
     throttle_classes = (ResendVerificationRateThrottle,)
-    serializer_class = ResendVerificationSerializer
+    serializer_class = ResendVerificationOTPSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        RegistrationService.resend_verification_email(
+        RegistrationService.resend_verification_otp(
             email=serializer.validated_data["email"], request=request
         )
 

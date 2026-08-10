@@ -42,6 +42,15 @@ class ResendVerificationRateThrottle(AnonRateThrottle):
     scope = "resend_verification"
 
 
+class VerifyEmailOTPRateThrottle(AnonRateThrottle):
+    """
+    Rate limiter for email verification OTP attempts to protect against brute-force attacks.
+    Scope: 'verify_email_otp' (Default: 5/min)
+    """
+
+    scope = "verify_email_otp"
+
+
 class PasswordResetRateThrottle(AnonRateThrottle):
     """
     Rate limiter for password reset / forgot password requests.

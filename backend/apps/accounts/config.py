@@ -12,8 +12,12 @@ class AccountsConfig:
     """Centralized accounts settings accessor."""
 
     @property
-    def email_verification_expiry_hours(self) -> int:
-        return getattr(settings, "EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS", 24)
+    def email_verification_otp_expiry_minutes(self) -> int:
+        return getattr(settings, "EMAIL_VERIFICATION_OTP_EXPIRY_MINUTES", 10)
+
+    @property
+    def max_otp_attempts(self) -> int:
+        return getattr(settings, "MAX_OTP_ATTEMPTS", 5)
 
     @property
     def password_reset_expiry_hours(self) -> int:
@@ -22,14 +26,6 @@ class AccountsConfig:
     @property
     def frontend_url(self) -> str:
         return getattr(settings, "FRONTEND_URL", "http://localhost:5173")
-
-    @property
-    def frontend_verify_email_url(self) -> str:
-        return getattr(
-            settings,
-            "FRONTEND_VERIFY_EMAIL_URL",
-            f"{self.frontend_url}/verify-email",
-        )
 
     @property
     def frontend_reset_password_url(self) -> str:

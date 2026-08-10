@@ -13,22 +13,26 @@ from apps.accounts.api.views import (
     LoginAPIView,
     LogoutAPIView,
     RegisterAPIView,
-    ResendVerificationAPIView,
+    ResendVerificationOTPAPIView,
     ResetPasswordAPIView,
     UploadAvatarAPIView,
     UserProfileAPIView,
-    VerifyEmailAPIView,
+    VerifyEmailOTPAPIView,
 )
 
 app_name = "accounts"
 
 urlpatterns = [
     path("register/", RegisterAPIView.as_view(), name="register"),
-    path("verify-email/", VerifyEmailAPIView.as_view(), name="verify_email"),
     path(
-        "resend-verification/",
-        ResendVerificationAPIView.as_view(),
-        name="resend_verification",
+        "verify-email-otp/",
+        VerifyEmailOTPAPIView.as_view(),
+        name="verify_email_otp",
+    ),
+    path(
+        "resend-verification-otp/",
+        ResendVerificationOTPAPIView.as_view(),
+        name="resend_verification_otp",
     ),
     path("login/", LoginAPIView.as_view(), name="login"),
     path("logout/", LogoutAPIView.as_view(), name="logout"),
