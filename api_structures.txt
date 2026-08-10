@@ -103,7 +103,7 @@ Request Body:
 Response (201 Created):
 {
   "success": true,
-  "message": "User registered successfully. Please check your email to verify your account.",
+  "message": "Registration successful. Please check your email for your 6-digit verification code.",
   "data": {
     "user": {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
