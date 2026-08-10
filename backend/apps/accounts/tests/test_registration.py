@@ -1,11 +1,15 @@
 """
 Comprehensive unit and integration test suite for PawMatch User Registration,
-EmailVerificationOTP Lifecycle, Events, Validators, and Resend OTP APIs.
+EmailVerificationOTP Lifecycle, Events, Validators, Brevo API Provider, and Resend OTP APIs.
 """
 
+import io
+import json
+import urllib.error
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
@@ -18,6 +22,7 @@ from rest_framework.test import APITestCase
 from apps.accounts.config import accounts_config
 from apps.accounts.events import user_registered_signal
 from apps.accounts.models import AccountToken, AccountTokenType, EmailVerificationOTP
+from apps.accounts.services.email_service import BrevoAPIProvider, EmailService
 from apps.accounts.services.registration_service import RegistrationService
 from apps.accounts.validators import validate_phone_number
 from apps.audit_logs.models import AuditLog
@@ -37,6 +42,9 @@ class TestRegistrationAndOTPVerification(APITestCase):
         except Exception:
             pass
 
+        self.orig_provider = getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API")
+        settings.ACCOUNTS_EMAIL_PROVIDER = "SMTP"
+
         self.register_url = reverse("accounts:register")
         self.verify_url = reverse("accounts:verify_email_otp")
         self.resend_url = reverse("accounts:resend_verification_otp")
@@ -54,6 +62,7 @@ class TestRegistrationAndOTPVerification(APITestCase):
             cache.clear()
         except Exception:
             pass
+        settings.ACCOUNTS_EMAIL_PROVIDER = self.orig_provider
 
     def test_successful_user_registration(self):
         """
@@ -372,4 +381,127 @@ class TestRegistrationAndOTPVerification(APITestCase):
         assert accounts_config.email_verification_otp_expiry_minutes == 10
         assert accounts_config.max_otp_attempts == 5
         assert "http" in accounts_config.frontend_url
-        assert accounts_config.email_provider_backend == "SMTP"
+
+
+class TestBrevoAPIProvider(APITestCase):
+    """
+    Test suite for Brevo Transactional Email HTTPS API Provider.
+    Verifies URL target, request headers, payload structure, error handling, and API key safety.
+    """
+
+    def setUp(self):
+        self.orig_key = getattr(settings, "BREVO_API_KEY", "")
+        self.orig_provider = getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API")
+        settings.BREVO_API_KEY = "xkeysib-secret-test-key-12345"
+        settings.ACCOUNTS_EMAIL_PROVIDER = "BREVO_API"
+
+    def tearDown(self):
+        settings.BREVO_API_KEY = self.orig_key
+        settings.ACCOUNTS_EMAIL_PROVIDER = self.orig_provider
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_api_provider_success(self, mock_urlopen):
+        """
+        Tests valid BREVO_API_KEY results in correct Brevo HTTPS API request,
+        with expected headers, payload parameters, and successful response.
+        """
+        mock_response = MagicMock()
+        mock_response.status = 201
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        provider = BrevoAPIProvider()
+        result = provider.send_email(
+            to_email="recipient@example.com",
+            subject="Test Subject",
+            html_content="<p>Test HTML</p>",
+            text_content="Test Text",
+        )
+
+        assert result is True
+        assert mock_urlopen.called is True
+
+        # Inspect request object passed to urlopen
+        req = mock_urlopen.call_args[0][0]
+        assert req.full_url == "https://api.brevo.com/v3/smtp/email"
+        assert req.headers.get("Api-key") == "xkeysib-secret-test-key-12345"
+        assert req.headers.get("Content-type") == "application/json"
+
+        body_payload = json.loads(req.data.decode("utf-8"))
+        assert body_payload["to"] == [{"email": "recipient@example.com"}]
+        assert body_payload["subject"] == "Test Subject"
+        assert body_payload["htmlContent"] == "<p>Test HTML</p>"
+        assert body_payload["textContent"] == "Test Text"
+        assert "email" in body_payload["sender"]
+
+    def test_brevo_api_provider_missing_key_raises_error(self):
+        """Tests calling Brevo API provider without BREVO_API_KEY raises ValueError."""
+        settings.BREVO_API_KEY = ""
+        provider = BrevoAPIProvider()
+
+        try:
+            provider.send_email(
+                to_email="recipient@example.com",
+                subject="Test",
+                html_content="<p>Test</p>",
+                text_content="Test",
+            )
+            assert False, "Should have raised ValueError"
+        except ValueError as exc:
+            assert "BREVO_API_KEY environment variable is missing" in str(exc)
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_api_provider_http_error_handling(self, mock_urlopen):
+        """Tests Brevo HTTPError (e.g. 401 Unauthorized) is caught and handled cleanly."""
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="https://api.brevo.com/v3/smtp/email",
+            code=401,
+            msg="Unauthorized",
+            hdrs={},
+            fp=io.BytesIO(b'{"message": "Invalid API key"}'),
+        )
+
+        provider = BrevoAPIProvider()
+        try:
+            provider.send_email(
+                to_email="recipient@example.com",
+                subject="Test",
+                html_content="<p>Test</p>",
+                text_content="Test",
+            )
+            assert False, "Should have raised RuntimeError"
+        except RuntimeError as exc:
+            assert "401" in str(exc)
+            # Ensure secret API key is NOT exposed in exception message
+            assert "xkeysib-secret-test-key-12345" not in str(exc)
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_api_provider_network_error_handling(self, mock_urlopen):
+        """Tests Brevo URLError (network connection failure) is caught and handled cleanly."""
+        mock_urlopen.side_effect = urllib.error.URLError(reason="Connection timeout")
+
+        provider = BrevoAPIProvider()
+        try:
+            provider.send_email(
+                to_email="recipient@example.com",
+                subject="Test",
+                html_content="<p>Test</p>",
+                text_content="Test",
+            )
+            assert False, "Should have raised RuntimeError"
+        except RuntimeError as exc:
+            assert "Connection timeout" in str(exc)
+
+    @patch.object(BrevoAPIProvider, "send_email", return_value=True)
+    def test_email_service_dispatches_via_brevo_api(self, mock_send_email):
+        """Tests EmailService delegates verification email dispatch to BrevoAPIProvider."""
+        user = User.objects.create_user(
+            email="brevo_user@example.com",
+            first_name="Brevo",
+            last_name="User",
+            password="Password123!",
+        )
+
+        success = EmailService.send_verification_otp_email(user=user, raw_otp="123456")
+        assert success is True
+        assert mock_send_email.called is True

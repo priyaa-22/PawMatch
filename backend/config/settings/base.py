@@ -177,7 +177,7 @@ STORAGES = {
 # Primary Key Default
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Email Configuration (Base Placeholders)
+# Email Configuration (Base Placeholders & Brevo HTTPS API)
 EMAIL_BACKEND = env.str(
     "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
 )
@@ -189,6 +189,10 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env.str(
     "DEFAULT_FROM_EMAIL", default="PawMatch <noreply@pawmatch.com>"
 )
+
+# Brevo HTTPS API Key & Provider Selection
+BREVO_API_KEY = env.str("BREVO_API_KEY", default="")
+ACCOUNTS_EMAIL_PROVIDER = env.str("ACCOUNTS_EMAIL_PROVIDER", default="BREVO_API")
 
 # Django REST Framework (DRF) Configuration
 REST_FRAMEWORK = {

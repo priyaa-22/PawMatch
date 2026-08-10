@@ -3,8 +3,12 @@ Email delivery service for PawMatch.
 Implements an abstract EmailProvider strategy and handles rendering and dispatching of transactional emails.
 """
 
+import json
 import logging
+import urllib.error
+import urllib.request
 from abc import ABC, abstractmethod
+from email.utils import parseaddr
 from typing import Any, Optional
 
 from django.conf import settings
@@ -47,6 +51,89 @@ class SMTPProvider(EmailProvider):
         return True
 
 
+class BrevoAPIProvider(EmailProvider):
+    """
+    Concrete Brevo Transactional Email HTTPS API provider.
+    Dispatches transactional emails via Brevo REST API v3 over HTTPS.
+    Avoids outbound SMTP port blocking issues on cloud platforms (e.g. Render Free).
+    """
+
+    API_URL = "https://api.brevo.com/v3/smtp/email"
+    DEFAULT_TIMEOUT = 10  # seconds
+
+    def send_email(
+        self, to_email: str, subject: str, html_content: str, text_content: str
+    ) -> bool:
+        api_key = getattr(settings, "BREVO_API_KEY", "")
+        if not api_key:
+            logger.error(
+                "Failed to send email via Brevo API: BREVO_API_KEY is missing."
+            )
+            raise ValueError("BREVO_API_KEY environment variable is missing.")
+
+        sender_name, sender_email = parseaddr(settings.DEFAULT_FROM_EMAIL)
+        if not sender_email:
+            sender_email = "noreply@pawmatch.com"
+        if not sender_name:
+            sender_name = "PawMatch"
+
+        payload = {
+            "sender": {
+                "name": sender_name,
+                "email": sender_email,
+            },
+            "to": [
+                {
+                    "email": to_email,
+                }
+            ],
+            "subject": subject,
+            "htmlContent": html_content,
+            "textContent": text_content,
+        }
+
+        headers = {
+            "api-key": api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url=self.API_URL,
+            data=data,
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=self.DEFAULT_TIMEOUT) as response:
+                if response.status in (200, 201, 202):
+                    return True
+                logger.error(f"Brevo API returned HTTP status code: {response.status}")
+                return False
+        except urllib.error.HTTPError as exc:
+            error_body = (
+                exc.read().decode("utf-8", errors="replace")
+                if hasattr(exc, "read")
+                else ""
+            )
+            logger.error(
+                f"Brevo API HTTPError {exc.code}: {exc.reason}. Body: {error_body}"
+            )
+            raise RuntimeError(
+                f"Brevo API request failed with status {exc.code}: {exc.reason}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            logger.error(f"Brevo API URLError: {exc.reason}")
+            raise RuntimeError(
+                f"Brevo API network connection failed: {exc.reason}"
+            ) from exc
+        except Exception as exc:
+            logger.error(f"Brevo API unexpected failure: {exc}")
+            raise
+
+
 class EmailService:
     """
     Service responsible for rendering transactional emails and delegating delivery to active EmailProvider.
@@ -54,13 +141,15 @@ class EmailService:
 
     _provider_registry = {
         "SMTP": SMTPProvider,
+        "BREVO_API": BrevoAPIProvider,
+        "BREVO": BrevoAPIProvider,
     }
 
     @classmethod
     def get_provider(cls) -> EmailProvider:
         """Instantiates active EmailProvider based on configuration."""
         backend_key = accounts_config.email_provider_backend
-        provider_cls = cls._provider_registry.get(backend_key, SMTPProvider)
+        provider_cls = cls._provider_registry.get(backend_key, BrevoAPIProvider)
         return provider_cls()
 
     @classmethod

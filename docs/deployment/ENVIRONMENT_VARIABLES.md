@@ -38,7 +38,8 @@ When Django initializes, `config/settings/base.py` selects the environment file 
 | `EMAIL_HOST` | No | `smtp.sendgrid.net` | SMTP gateway host |
 | `EMAIL_PORT` | No | `587` | SMTP gateway port |
 | `EMAIL_HOST_USER` | No | `apikey` | SMTP account username / API key |
-| `EMAIL_HOST_PASSWORD` | No | `[SMTP Secret]` | SMTP account password / secret |
+| `BREVO_API_KEY` | Yes (Prod) | `xkeysib-...` | Brevo Transactional Email API key for HTTPS dispatch |
+| `ACCOUNTS_EMAIL_PROVIDER` | No | `BREVO_API` | Active email provider (`BREVO_API` or `SMTP`) |
 | `DEFAULT_FROM_EMAIL` | No | `PawMatch <noreply@pawmatch.com>` | Outbound transactional sender address |
 | `JWT_ACCESS_LIFETIME` | No | `15` | JWT Access Token duration in minutes |
 | `JWT_REFRESH_LIFETIME` | No | `7` | JWT Refresh Token duration in days |
