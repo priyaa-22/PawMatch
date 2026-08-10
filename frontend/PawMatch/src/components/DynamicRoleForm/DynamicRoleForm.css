@@ -1,0 +1,56 @@
+/* Dynamic Role Form Styling & Transitions */
+
+.dynamic-role-form-container {
+  width: 100%;
+}
+
+.key-fade-in {
+  animation: fadeInRole 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInRole {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dynamic-role-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem 1rem;
+}
+
+.grid-col-full {
+  grid-column: span 2;
+}
+
+.grid-col-half {
+  grid-column: span 1;
+}
+
+/* Responsiveness for mobile screens */
+@media (max-width: 640px) {
+  .dynamic-role-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-col-half,
+  .grid-col-full {
+    grid-column: span 1;
+  }
+}
+
+.form-input-error {
+  border-color: #dc2626 !important;
+  background-color: #FEF2F2 !important;
+}
+
+.field-error-message {
+  display: block;
+  font-weight: 500;
+}

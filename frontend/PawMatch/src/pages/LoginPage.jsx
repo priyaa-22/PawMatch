@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import PasswordInput from '../components/PasswordInput/PasswordInput';
+import { getRoleDefaultRoute, determineUserRole } from '../utils/roleUtils';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -13,10 +15,10 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/dashboard';
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     setErrorMsg('');
     setSuccessMsg('');
     setSubmitting(true);
@@ -25,14 +27,21 @@ export const LoginPage = () => {
       const res = await login(email, password);
       if (res.success) {
         setSuccessMsg(res.message || 'Login successful!');
+
+        // Determine post-login redirect path based on user role
+        const loggedUser = res.data?.user;
+        const resolvedRole = determineUserRole(loggedUser, []);
+        const roleRoute = getRoleDefaultRoute(resolvedRole);
+        const targetRoute = location.state?.from?.pathname || roleRoute;
+
         setTimeout(() => {
-          navigate(from, { replace: true });
+          navigate(targetRoute, { replace: true });
         }, 500);
       } else {
-        setErrorMsg(res.message || 'Failed to login. Please check credentials.');
+        setErrorMsg(res.message || 'Failed to login. Please check your credentials.');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'An unexpected error occurred during login.');
+      setErrorMsg(err.message || 'An unexpected network error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -63,6 +72,7 @@ export const LoginPage = () => {
               placeholder="user@example.com"
               required
               disabled={submitting}
+              autoComplete="email"
             />
           </div>
 
@@ -73,15 +83,15 @@ export const LoginPage = () => {
                 Forgot Password?
               </Link>
             </div>
-            <input
+            <PasswordInput
               id="login-password"
-              type="password"
-              className="form-input"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
               disabled={submitting}
+              autoComplete="current-password"
             />
           </div>
 

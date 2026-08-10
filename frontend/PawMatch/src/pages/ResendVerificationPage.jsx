@@ -2,34 +2,34 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import authService from '../services/auth.service';
 
-export const ForgotPasswordPage = () => {
+export const ResendVerificationPage = () => {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
 
-    setMessage('');
     setErrorMsg('');
     setFieldErrors({});
+    setSuccessMsg('');
     setSubmitting(true);
 
     try {
-      const res = await authService.forgotPassword(email);
+      const res = await authService.resendVerification(email);
       if (res.success) {
-        setMessage(res.message || 'If the email exists, a password reset link has been sent.');
+        setSuccessMsg(res.message || 'Verification email has been resent successfully. Please check your inbox.');
       } else {
-        setErrorMsg(res.message || 'Failed to request password reset.');
+        setErrorMsg(res.message || 'Failed to resend verification email.');
         if (res.errors) {
           setFieldErrors(res.errors);
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'A network error occurred while sending password reset link.');
+      setErrorMsg(err.message || 'A network error occurred while sending verification email.');
       if (err.errors) {
         setFieldErrors(err.errors);
       }
@@ -42,20 +42,20 @@ export const ForgotPasswordPage = () => {
     <div className="auth-page-container">
       <div className="auth-card">
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>Forgot Password</h2>
+          <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>Resend Verification Email</h2>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-            Enter your account email to receive a password reset link
+            Enter your email address to receive a new verification link
           </p>
         </div>
 
         {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
-        {message && <div className="alert alert-success">{message}</div>}
+        {successMsg && <div className="alert alert-success">{successMsg}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="forgot-email">Email Address</label>
+            <label className="form-label" htmlFor="resend-email">Email Address</label>
             <input
-              id="forgot-email"
+              id="resend-email"
               type="email"
               className="form-input"
               value={email}
@@ -76,7 +76,7 @@ export const ForgotPasswordPage = () => {
           </div>
 
           <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: '1rem' }}>
-            {submitting ? <span className="loading-spinner"></span> : 'Send Reset Link'}
+            {submitting ? <span className="loading-spinner"></span> : 'Send Verification Email'}
           </button>
         </form>
 
@@ -90,4 +90,4 @@ export const ForgotPasswordPage = () => {
   );
 };
 
-export default ForgotPasswordPage;
+export default ResendVerificationPage;

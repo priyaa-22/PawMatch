@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  ACCOUNT_TYPES,
+  ROLE_FIELDS,
+  INITIAL_FORM_STATE,
+  buildRegisterPayload,
+} from '../config/roleRegistrationConfig';
+import FormSelect from '../components/Form/FormSelect';
+import DynamicRoleForm from '../components/DynamicRoleForm/DynamicRoleForm';
+import './RegisterPage.css';
 
 export const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    first_name: '',
-    last_name: '',
-    password: '',
-    confirm_password: '',
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
@@ -18,28 +21,79 @@ export const RegisterPage = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const activeRole = formData.account_type || 'pet_owner';
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (fieldErrors[e.target.name]) {
-      setFieldErrors({ ...fieldErrors, [e.target.name]: null });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: null }));
     }
+  };
+
+  const handleRoleChange = (e) => {
+    const selectedRole = e.target.value;
+    setFormData((prev) => ({ ...prev, account_type: selectedRole }));
+    // Clear previous field-level validation errors on role change
+    setFieldErrors({});
+    setErrorMsg('');
+  };
+
+  const validateForm = () => {
+    const activeFields = ROLE_FIELDS[activeRole] || [];
+    const errors = {};
+    let isValid = true;
+
+    // Validate only currently visible active fields
+    activeFields.forEach((field) => {
+      if (field.required) {
+        const val = formData[field.name];
+        if (!val || (typeof val === 'string' && val.trim() === '')) {
+          errors[field.name] = [`${field.label} is required.`];
+          isValid = false;
+        }
+      }
+    });
+
+    if (formData.password && formData.confirm_password && formData.password !== formData.confirm_password) {
+      errors.confirm_password = ['Passwords do not match.'];
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    if (!isValid) {
+      if (errors.confirm_password && Object.keys(errors).length === 1) {
+        setErrorMsg('Passwords do not match.');
+      } else {
+        setErrorMsg('Please fill in all required fields accurately.');
+      }
+    }
+
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     setErrorMsg('');
-    setFieldErrors({});
     setSuccessMsg('');
 
-    if (formData.password !== formData.confirm_password) {
-      setErrorMsg('Passwords do not match.');
+    if (!validateForm()) {
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const res = await register(formData);
+      /**
+       * CRITICAL: Build API payload.
+       * Sends strictly ONLY { first_name, last_name, email, password, confirm_password }
+       * Extra role fields remain strictly on the frontend UI.
+       */
+      const payload = buildRegisterPayload(formData, activeRole);
+      
+      const res = await register(payload);
       if (res.success) {
         setSuccessMsg(res.message || 'Registration successful! Please check your email to verify your account.');
         setTimeout(() => {
@@ -52,7 +106,7 @@ export const RegisterPage = () => {
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Registration error occurred.');
+      setErrorMsg(err.message || 'An unexpected error occurred during registration.');
       if (err.errors) {
         setFieldErrors(err.errors);
       }
@@ -63,7 +117,7 @@ export const RegisterPage = () => {
 
   return (
     <div className="auth-page-container">
-      <div className="auth-card">
+      <div className="auth-card auth-card-wide">
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>Create Account</h2>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
@@ -74,88 +128,31 @@ export const RegisterPage = () => {
         {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
         {successMsg && <div className="alert alert-success">{successMsg}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="register-first-name">First Name</label>
-              <input
-                id="register-first-name"
-                name="first_name"
-                type="text"
-                className="form-input"
-                value={formData.first_name}
-                onChange={handleChange}
-                required
-                disabled={submitting}
-              />
-              {fieldErrors.first_name && <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>{fieldErrors.first_name[0]}</span>}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="register-last-name">Last Name</label>
-              <input
-                id="register-last-name"
-                name="last_name"
-                type="text"
-                className="form-input"
-                value={formData.last_name}
-                onChange={handleChange}
-                required
-                disabled={submitting}
-              />
-              {fieldErrors.last_name && <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>{fieldErrors.last_name[0]}</span>}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-email">Email Address</label>
-            <input
-              id="register-email"
-              name="email"
-              type="email"
-              className="form-input"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="user@example.com"
+        <form onSubmit={handleSubmit} noValidate>
+          {/* 1. ACCOUNT TYPE DROPDOWN */}
+          <div className="role-selector-wrapper">
+            <FormSelect
+              id="register-account-type"
+              name="account_type"
+              label="Account Type"
+              value={activeRole}
+              onChange={handleRoleChange}
+              options={ACCOUNT_TYPES}
               required
               disabled={submitting}
             />
-            {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>{fieldErrors.email[0]}</span>}
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-password">Password</label>
-            <input
-              id="register-password"
-              name="password"
-              type="password"
-              className="form-input"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              disabled={submitting}
-            />
-            {fieldErrors.password && <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>{fieldErrors.password[0]}</span>}
-          </div>
+          {/* 2. DYNAMIC FORM FIELDS */}
+          <DynamicRoleForm
+            roleId={activeRole}
+            formData={formData}
+            fieldErrors={fieldErrors}
+            onChange={handleChange}
+            disabled={submitting}
+          />
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-confirm-password">Confirm Password</label>
-            <input
-              id="register-confirm-password"
-              name="confirm_password"
-              type="password"
-              className="form-input"
-              value={formData.confirm_password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              disabled={submitting}
-            />
-            {fieldErrors.confirm_password && <span style={{ color: '#dc2626', fontSize: '0.75rem' }}>{fieldErrors.confirm_password[0]}</span>}
-          </div>
-
-          <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: '1rem' }}>
+          <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: '1.5rem' }}>
             {submitting ? <span className="loading-spinner"></span> : 'Register'}
           </button>
         </form>
