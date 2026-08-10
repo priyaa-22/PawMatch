@@ -7,6 +7,7 @@ Security Email Notifications, and Audit Trails.
 from datetime import timedelta
 from unittest.mock import MagicMock
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
@@ -36,6 +37,9 @@ class TestPasswordManagement(APITestCase):
         except Exception:
             pass
 
+        self.orig_provider = getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API")
+        settings.ACCOUNTS_EMAIL_PROVIDER = "SMTP"
+
         self.old_password = "OldPassword123!"
         self.new_password = "NewStrongPassword123!"
         self.user = User.objects.create_user(
@@ -56,6 +60,7 @@ class TestPasswordManagement(APITestCase):
             cache.clear()
         except Exception:
             pass
+        settings.ACCOUNTS_EMAIL_PROVIDER = self.orig_provider
 
     def test_change_password_success(self):
         """Tests authenticated user changing password updates user hash, dispatches email, event signal, and audit log."""
