@@ -20,6 +20,13 @@ class AuditAction:
     EMAIL_VERIFICATION_FAILED = "EMAIL_VERIFICATION_FAILED"
     VERIFICATION_EMAIL_RESENT = "VERIFICATION_EMAIL_RESENT"
     RESEND_VERIFICATION_FAILED = "RESEND_VERIFICATION_FAILED"
+    OTP_GENERATED = "OTP_GENERATED"
+    OTP_SENT = "OTP_SENT"
+    OTP_VERIFICATION_SUCCESS = "OTP_VERIFICATION_SUCCESS"
+    OTP_VERIFICATION_FAILED = "OTP_VERIFICATION_FAILED"
+    OTP_EXPIRED = "OTP_EXPIRED"
+    OTP_MAX_ATTEMPTS_EXCEEDED = "OTP_MAX_ATTEMPTS_EXCEEDED"
+    OTP_RESENT = "OTP_RESENT"
     PROFILE_UPDATED = "PROFILE_UPDATED"
     AVATAR_UPLOADED = "AVATAR_UPLOADED"
     AVATAR_DELETED = "AVATAR_DELETED"
@@ -46,6 +53,7 @@ class ThrottleScope:
     LOGIN_USER = "login_user"
     REGISTER_ANON = "register_anon"
     RESEND_VERIFICATION = "resend_verification"
+    VERIFY_EMAIL_OTP = "verify_email_otp"
     PASSWORD_RESET = "password_reset"
 
 
@@ -66,10 +74,11 @@ class AuthMessage:
     TOKEN_REFRESH_SUCCESS = "Token refreshed successfully."
     CURRENT_USER_RETRIEVED = "Current user profile retrieved successfully."
     REGISTRATION_SUCCESS = (
-        "Registration successful. Please check your email to verify your account."
+        "Registration successful. Please check your email for your 6-digit "
+        "verification code."
     )
     EMAIL_VERIFIED_SUCCESS = "Email verified successfully. Your account is now active."
-    VERIFICATION_RESENT_SUCCESS = "Verification email sent. Please check your inbox."
+    VERIFICATION_RESENT_SUCCESS = "Verification code sent. Please check your inbox."
     PROFILE_RETRIEVED_SUCCESS = "User profile retrieved successfully."
     PROFILE_UPDATED_SUCCESS = "User profile updated successfully."
     AVATAR_UPLOADED_SUCCESS = "Avatar uploaded successfully."
@@ -77,7 +86,7 @@ class AuthMessage:
     ACCOUNT_DEACTIVATED_SUCCESS = "Account deactivated successfully."
     PASSWORD_CHANGED_SUCCESS = "Password changed successfully."
     FORGOT_PASSWORD_SUCCESS = (
-        "If an account with that email exists, a password reset link has been sent."
+        "If an account with that email exists, a password reset link has been " "sent."
     )
     PASSWORD_RESET_SUCCESS = (
         "Password reset successfully. You can now log in with your new password."
@@ -87,6 +96,11 @@ class AuthMessage:
     INVALID_CREDENTIALS = "Invalid email or password."
     ACCOUNT_DISABLED = "Your account has been disabled."
     TOKEN_INVALID_OR_EXPIRED = "Token is invalid, expired, or already used."
+    INVALID_OTP = "Invalid verification code. Please check and try again."
+    EXPIRED_OTP = "Verification code has expired. Please request a new code."
+    MAX_OTP_ATTEMPTS = (
+        "Maximum verification attempts exceeded. Please request a new code."
+    )
     REFRESH_TOKEN_REQUIRED = "Refresh token is required."
     EMAIL_ALREADY_EXISTS = "A user with that email already exists."
     EMAIL_ALREADY_VERIFIED = "Email address is already verified."

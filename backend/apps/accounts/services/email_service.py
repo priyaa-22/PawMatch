@@ -64,22 +64,21 @@ class EmailService:
         return provider_cls()
 
     @classmethod
-    def send_verification_email(
-        cls, user: Any, raw_token: str, request: Optional[Any] = None
+    def send_verification_otp_email(
+        cls, user: Any, raw_otp: str, request: Optional[Any] = None
     ) -> bool:
         """
-        Renders and dispatches account email verification email.
+        Renders and dispatches 6-digit email verification OTP email.
         """
-        verification_url = (
-            f"{accounts_config.frontend_verify_email_url}?token={raw_token}"
-        )
         context = {
             "first_name": user.first_name,
-            "verification_url": verification_url,
-            "token_expiry_hours": accounts_config.email_verification_expiry_hours,
+            "otp": raw_otp,
+            "otp_expiry_minutes": (
+                accounts_config.email_verification_otp_expiry_minutes
+            ),
         }
 
-        subject = "Verify your PawMatch Account"
+        subject = "Your PawMatch Verification Code"
         html_content = render_to_string(EmailTemplate.VERIFICATION_EMAIL, context)
         text_content = strip_tags(html_content)
 
@@ -93,13 +92,13 @@ class EmailService:
             )
 
             logger.info(
-                "Verification email successfully dispatched",
+                "Verification OTP email successfully dispatched",
                 extra={"user_id": str(user.id), "email": user.email},
             )
             return True
         except Exception as exc:
             logger.error(
-                f"Failed to dispatch verification email to {user.email}: {exc}",
+                f"Failed to dispatch verification OTP email to {user.email}: {exc}",
                 extra={"user_id": str(user.id), "email": user.email},
                 exc_info=True,
             )

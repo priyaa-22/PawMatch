@@ -211,6 +211,7 @@ REST_FRAMEWORK = {
         "login_user": env.str("THROTTLE_LOGIN_USER", default="20/min"),
         "register_anon": env.str("THROTTLE_REGISTER_ANON", default="5/min"),
         "resend_verification": env.str("THROTTLE_RESEND_VERIFICATION", default="3/min"),
+        "verify_email_otp": env.str("THROTTLE_VERIFY_EMAIL_OTP", default="5/min"),
         "password_reset": env.str("THROTTLE_PASSWORD_RESET", default="3/min"),
         "anon": "100/day",
         "user": "1000/day",
@@ -244,13 +245,15 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # Registration & Verification Configuration
-EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = env.int(
-    "EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS", default=24
+EMAIL_VERIFICATION_OTP_EXPIRY_MINUTES = env.int(
+    "EMAIL_VERIFICATION_OTP_EXPIRY_MINUTES", default=10
 )
+MAX_OTP_ATTEMPTS = env.int("MAX_OTP_ATTEMPTS", default=5)
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:5173")
-FRONTEND_VERIFY_EMAIL_URL = env.str(
-    "FRONTEND_VERIFY_EMAIL_URL", default=f"{FRONTEND_URL}/verify-email"
+FRONTEND_RESET_PASSWORD_URL = env.str(
+    "FRONTEND_RESET_PASSWORD_URL", default=f"{FRONTEND_URL}/reset-password"
 )
+
 
 # Centralized Logging Setup
 from .logging import get_logging_config  # noqa: E402

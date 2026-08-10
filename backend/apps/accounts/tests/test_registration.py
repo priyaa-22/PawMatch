@@ -1,6 +1,6 @@
 """
 Comprehensive unit and integration test suite for PawMatch User Registration,
-AccountToken Lifecycle, Events, Validators, and Resend Verification APIs.
+EmailVerificationOTP Lifecycle, Events, Validators, and Resend OTP APIs.
 """
 
 from datetime import timedelta
@@ -17,7 +17,7 @@ from rest_framework.test import APITestCase
 
 from apps.accounts.config import accounts_config
 from apps.accounts.events import user_registered_signal
-from apps.accounts.models import AccountToken, AccountTokenType
+from apps.accounts.models import AccountToken, AccountTokenType, EmailVerificationOTP
 from apps.accounts.services.registration_service import RegistrationService
 from apps.accounts.validators import validate_phone_number
 from apps.audit_logs.models import AuditLog
@@ -25,8 +25,11 @@ from apps.audit_logs.models import AuditLog
 User = get_user_model()
 
 
-class TestRegistrationAndVerification(APITestCase):
-    """Test suite for User Registration, Email Verification, and AccountToken Lifecycle management."""
+class TestRegistrationAndOTPVerification(APITestCase):
+    """
+    Test suite for User Registration, 6-digit Email Verification OTP,
+    and OTP Lifecycle management.
+    """
 
     def setUp(self):
         try:
@@ -35,8 +38,8 @@ class TestRegistrationAndVerification(APITestCase):
             pass
 
         self.register_url = reverse("accounts:register")
-        self.verify_url = reverse("accounts:verify_email")
-        self.resend_url = reverse("accounts:resend_verification")
+        self.verify_url = reverse("accounts:verify_email_otp")
+        self.resend_url = reverse("accounts:resend_verification_otp")
 
         self.valid_payload = {
             "email": "newuser@example.com",
@@ -53,7 +56,10 @@ class TestRegistrationAndVerification(APITestCase):
             pass
 
     def test_successful_user_registration(self):
-        """Tests registering a new user creates inactive account, token hash, email outbox message, and audit log."""
+        """
+        Tests registering a new user creates inactive account,
+        OTP hash, email outbox message, and audit log.
+        """
         response = self.client.post(
             self.register_url, self.valid_payload, format="json"
         )
@@ -66,17 +72,15 @@ class TestRegistrationAndVerification(APITestCase):
         assert user.is_active is False
         assert user.is_email_verified is False
 
-        # Verify AccountToken created with token_hash and token_type EMAIL_VERIFICATION
-        token_obj = AccountToken.objects.filter(
-            user=user, token_type=AccountTokenType.EMAIL_VERIFICATION
-        ).first()
-        assert token_obj is not None
-        assert token_obj.is_active is True
-        assert token_obj.token_hash != ""
+        # Verify EmailVerificationOTP created with otp_hash
+        otp_obj = EmailVerificationOTP.objects.filter(user=user, is_active=True).first()
+        assert otp_obj is not None
+        assert otp_obj.is_active is True
+        assert otp_obj.otp_hash != ""
 
-        # Verify email outbox contains 1 verification email
+        # Verify email outbox contains 1 verification OTP email
         assert len(mail.outbox) == 1
-        assert "Verify your PawMatch Account" in mail.outbox[0].subject
+        assert "Your PawMatch Verification Code" in mail.outbox[0].subject
         assert "newuser@example.com" in mail.outbox[0].to
 
         # Verify audit log recorded
@@ -85,7 +89,7 @@ class TestRegistrationAndVerification(APITestCase):
         assert audit_entry.email == "newuser@example.com"
 
     def test_register_duplicate_email(self):
-        """Tests that registering with an existing email returns HTTP 400 validation error."""
+        """Tests registering with existing email returns HTTP 400 error."""
         User.objects.create_user(
             email="newuser@example.com",
             first_name="Existing",
@@ -102,7 +106,7 @@ class TestRegistrationAndVerification(APITestCase):
         assert "email" in response.data["errors"]
 
     def test_register_password_mismatch(self):
-        """Tests registration fails when password and confirm_password do not match."""
+        """Tests registration fails when passwords do not match."""
         payload = self.valid_payload.copy()
         payload["confirm_password"] = "DifferentPassword123!"
 
@@ -113,7 +117,7 @@ class TestRegistrationAndVerification(APITestCase):
         assert "confirm_password" in response.data["errors"]
 
     def test_register_weak_password(self):
-        """Tests registration fails when password does not meet Django security requirements."""
+        """Tests registration fails when password is weak."""
         payload = self.valid_payload.copy()
         payload["password"] = "123"
         payload["confirm_password"] = "123"
@@ -123,9 +127,12 @@ class TestRegistrationAndVerification(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["success"] is False
 
-    def test_email_verification_successful(self):
-        """Tests verifying account with valid raw token activates user and dispatches welcome email."""
-        user, _, raw_token = RegistrationService.register_user(
+    def test_email_verification_otp_successful(self):
+        """
+        Tests verifying account with valid 6-digit OTP activates user
+        and dispatches welcome email.
+        """
+        user, _, raw_otp = RegistrationService.register_user(
             email="verify@example.com",
             password="Password123!",
             first_name="Verify",
@@ -133,7 +140,11 @@ class TestRegistrationAndVerification(APITestCase):
         )
         mail.outbox.clear()
 
-        verify_res = self.client.get(f"{self.verify_url}?token={raw_token}")
+        verify_res = self.client.post(
+            self.verify_url,
+            {"email": "verify@example.com", "otp": raw_otp},
+            format="json",
+        )
 
         assert verify_res.status_code == status.HTTP_200_OK
         assert verify_res.data["success"] is True
@@ -147,41 +158,86 @@ class TestRegistrationAndVerification(APITestCase):
         assert "Welcome to PawMatch!" in mail.outbox[0].subject
 
         # Verify audit trail
-        audit_entry = AuditLog.objects.filter(
-            action="EMAIL_VERIFICATION_SUCCESS"
-        ).first()
+        audit_entry = AuditLog.objects.filter(action="OTP_VERIFICATION_SUCCESS").first()
         assert audit_entry is not None
 
-    def test_email_verification_invalid_token(self):
-        """Tests verifying with invalid raw token returns HTTP 400 error."""
-        verify_res = self.client.get(
-            f"{self.verify_url}?token=invalid_raw_token_string"
+    def test_email_verification_invalid_otp(self):
+        """Tests verifying with invalid 6-digit OTP returns HTTP 400 error."""
+        user, _, _ = RegistrationService.register_user(
+            email="invalid_otp@example.com",
+            password="Password123!",
+            first_name="Invalid",
+            last_name="OTP",
+        )
+
+        verify_res = self.client.post(
+            self.verify_url,
+            {"email": "invalid_otp@example.com", "otp": "999999"},
+            format="json",
         )
 
         assert verify_res.status_code == status.HTTP_400_BAD_REQUEST
         assert verify_res.data["success"] is False
 
-    def test_email_verification_expired_token(self):
-        """Tests verifying with an expired token returns HTTP 400 error."""
-        user, token_obj, raw_token = RegistrationService.register_user(
+    def test_email_verification_expired_otp(self):
+        """Tests verifying with an expired OTP returns HTTP 400 error."""
+        user, otp_obj, raw_otp = RegistrationService.register_user(
             email="expired@example.com",
             password="Password123!",
             first_name="Expired",
             last_name="User",
         )
 
-        # Manually expire token
-        token_obj.expires_at = timezone.now() - timedelta(hours=1)
-        token_obj.save()
+        # Manually expire OTP
+        otp_obj.expires_at = timezone.now() - timedelta(minutes=15)
+        otp_obj.save()
 
-        verify_res = self.client.get(f"{self.verify_url}?token={raw_token}")
+        verify_res = self.client.post(
+            self.verify_url,
+            {"email": "expired@example.com", "otp": raw_otp},
+            format="json",
+        )
 
         assert verify_res.status_code == status.HTTP_400_BAD_REQUEST
         assert verify_res.data["success"] is False
 
-    def test_email_verification_reused_token(self):
-        """Tests that a single-use token cannot be reused for a second verification attempt."""
-        user, _, raw_token = RegistrationService.register_user(
+    def test_email_verification_max_attempts_exceeded(self):
+        """
+        Tests that exceeding max OTP attempt limit deactivates OTP
+        and rejects further requests.
+        """
+        user, otp_obj, raw_otp = RegistrationService.register_user(
+            email="max_attempts@example.com",
+            password="Password123!",
+            first_name="Max",
+            last_name="Attempts",
+        )
+
+        # Fail 5 consecutive times
+        for _ in range(5):
+            self.client.post(
+                self.verify_url,
+                {"email": "max_attempts@example.com", "otp": "000000"},
+                format="json",
+            )
+
+        otp_obj.refresh_from_db()
+        assert otp_obj.is_active is False
+
+        # Clear throttle cache so 6th request tests application-level 400 rejection
+        cache.clear()
+
+        # Attempt with correct OTP now fails because max attempts was reached
+        res = self.client.post(
+            self.verify_url,
+            {"email": "max_attempts@example.com", "otp": raw_otp},
+            format="json",
+        )
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_email_verification_reused_otp(self):
+        """Tests used OTP cannot be reused for second verification attempt."""
+        user, _, raw_otp = RegistrationService.register_user(
             email="reused@example.com",
             password="Password123!",
             first_name="Reused",
@@ -189,16 +245,27 @@ class TestRegistrationAndVerification(APITestCase):
         )
 
         # First verification succeeds
-        first_res = self.client.get(f"{self.verify_url}?token={raw_token}")
+        first_res = self.client.post(
+            self.verify_url,
+            {"email": "reused@example.com", "otp": raw_otp},
+            format="json",
+        )
         assert first_res.status_code == status.HTTP_200_OK
 
-        # Second verification fails
-        second_res = self.client.get(f"{self.verify_url}?token={raw_token}")
+        # Second verification fails (user is already verified)
+        second_res = self.client.post(
+            self.verify_url,
+            {"email": "reused@example.com", "otp": raw_otp},
+            format="json",
+        )
         assert second_res.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_resend_verification_email_successful(self):
-        """Tests resending verification email invalidates previous tokens and dispatches new email."""
-        user, old_token_obj, _ = RegistrationService.register_user(
+    def test_resend_verification_otp_successful(self):
+        """
+        Tests resending verification OTP invalidates previous OTPs
+        and dispatches new email.
+        """
+        user, old_otp_obj, _ = RegistrationService.register_user(
             email="resend@example.com",
             password="Password123!",
             first_name="Resend",
@@ -213,21 +280,20 @@ class TestRegistrationAndVerification(APITestCase):
         assert resend_res.status_code == status.HTTP_200_OK
         assert resend_res.data["success"] is True
 
-        old_token_obj.refresh_from_db()
-        assert old_token_obj.is_active is False
+        old_otp_obj.refresh_from_db()
+        assert old_otp_obj.is_active is False
 
-        new_token_obj = AccountToken.objects.filter(
+        new_otp_obj = EmailVerificationOTP.objects.filter(
             user=user,
-            token_type=AccountTokenType.EMAIL_VERIFICATION,
             is_active=True,
         ).first()
-        assert new_token_obj is not None
+        assert new_otp_obj is not None
 
         assert len(mail.outbox) == 1
-        assert "Verify your PawMatch Account" in mail.outbox[0].subject
+        assert "Your PawMatch Verification Code" in mail.outbox[0].subject
 
     def test_resend_verification_already_verified_user(self):
-        """Tests resending verification for an already verified user returns HTTP 400."""
+        """Tests resending verification for verified user returns HTTP 400."""
         User.objects.create_user(
             email="verified@example.com",
             first_name="Verified",
@@ -245,7 +311,9 @@ class TestRegistrationAndVerification(APITestCase):
         assert resend_res.data["success"] is False
 
     def test_resend_verification_unknown_email(self):
-        """Tests resending verification for non-existent email returns HTTP 400."""
+        """
+        Tests resending verification for non-existent email returns HTTP 400.
+        """
         resend_res = self.client.post(
             self.resend_url, {"email": "nonexistent@example.com"}, format="json"
         )
@@ -254,7 +322,10 @@ class TestRegistrationAndVerification(APITestCase):
         assert resend_res.data["success"] is False
 
     def test_account_token_generic_types_and_metadata(self):
-        """Tests generic AccountToken supports multiple token types and JSON metadata."""
+        """
+        Tests generic AccountToken supports PASSWORD_RESET token type
+        and JSON metadata.
+        """
         user = User.objects.create_user(
             email="token_test@example.com",
             first_name="Token",
@@ -275,7 +346,7 @@ class TestRegistrationAndVerification(APITestCase):
         assert str(token).startswith("[PASSWORD_RESET]")
 
     def test_phone_number_validator(self):
-        """Tests phone number validator accepts valid formats and rejects invalid formats."""
+        """Tests phone number validator formats."""
         assert validate_phone_number("+1234567890") == "+1234567890"
         assert validate_phone_number("123-456-7890") == "1234567890"
         assert validate_phone_number("") == ""
@@ -298,6 +369,7 @@ class TestRegistrationAndVerification(APITestCase):
 
     def test_accounts_config_defaults(self):
         """Tests accounts_config property accessors."""
-        assert accounts_config.email_verification_expiry_hours == 24
+        assert accounts_config.email_verification_otp_expiry_minutes == 10
+        assert accounts_config.max_otp_attempts == 5
         assert "http" in accounts_config.frontend_url
         assert accounts_config.email_provider_backend == "SMTP"

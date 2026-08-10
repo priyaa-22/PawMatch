@@ -21,6 +21,15 @@ def generate_secure_raw_token(length: Optional[int] = None) -> str:
     return secrets.token_urlsafe(num_bytes)
 
 
+def generate_secure_otp(digits: int = 6) -> str:
+    """
+    Generates a cryptographically secure numeric OTP string formatted with leading zeros.
+    """
+    max_val = 10**digits
+    number = secrets.randbelow(max_val)
+    return f"{number:0{digits}d}"
+
+
 def normalize_email_address(email: str) -> str:
     """Strips whitespace and lowercases email address."""
     return email.strip().lower() if email else ""

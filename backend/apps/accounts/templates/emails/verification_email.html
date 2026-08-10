@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your PawMatch Account</title>
+    <title>Your PawMatch Verification Code</title>
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333333; }
         .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .header { background: linear-gradient(135deg, #e11d48, #be123c); padding: 30px; text-align: center; color: #ffffff; }
         .header h1 { margin: 0; font-size: 26px; font-weight: 700; }
         .content { padding: 30px; line-height: 1.6; }
-        .btn { display: inline-block; background-color: #e11d48; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; text-align: center; }
+        .otp-box { background-color: #fff1f2; border: 2px dashed #e11d48; border-radius: 8px; padding: 20px; text-align: center; margin: 25px 0; }
+        .otp-code { font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #e11d48; font-family: 'Courier New', Courier, monospace; margin: 0; }
         .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
         .notice { font-size: 13px; color: #6b7280; margin-top: 20px; }
     </style>
@@ -23,13 +24,12 @@
         <div class="content">
             <h2>Welcome to PawMatch, {{ first_name }}! 🐾</h2>
             <p>Thank you for joining PawMatch — the smart pet adoption and health ecosystem.</p>
-            <p>Please click the button below to verify your email address and activate your account:</p>
-            <div style="text-align: center;">
-                <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+            <p>Your 6-digit email verification code is:</p>
+            <div class="otp-box">
+                <div class="otp-code">{{ otp }}</div>
             </div>
-            <p>Or copy and paste this link into your browser:</p>
-            <p><a href="{{ verification_url }}" style="color: #e11d48; word-break: break-all;">{{ verification_url }}</a></p>
-            <p class="notice">⏰ Note: This verification link will expire in {{ token_expiry_hours }} hours.</p>
+            <p class="notice">⏰ Note: This verification code will expire in {{ otp_expiry_minutes }} minutes.</p>
+            <p class="notice">If you did not create a PawMatch account, please ignore this email.</p>
         </div>
         <div class="footer">
             <p>&copy; 2026 PawMatch Ecosystem. All rights reserved.</p>

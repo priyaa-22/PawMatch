@@ -134,30 +134,28 @@ Response (400 Bad Request):
 
 
 --------------------------------------------------------------------------------
-2.2 Verify Email
+2.2 Verify Email via OTP
 --------------------------------------------------------------------------------
-- Description:    Verifies email address using cryptographically signed token.
-- HTTP Methods:   GET, POST
+- Description:    Verifies email address using 6-digit numeric OTP.
+- HTTP Method:    POST
 - Authentication: Public (AllowAny)
-- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/verify-email/
-- Localhost URL:  http://localhost:8000/api/v1/accounts/verify-email/
+- Rate Limit:     Throttle protected (VerifyEmailOTPRateThrottle: 5/min)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/verify-email-otp/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/verify-email-otp/
 
-GET Query Parameter Mode:
-  URL: /api/v1/accounts/verify-email/?token=d9b2e8f1a4c74892b1a03e56f789abc1
+Request Headers:
+  Content-Type: application/json
 
-POST Body Mode:
-  Request Headers:
-    Content-Type: application/json
-
-  Request Body:
-  {
-    "token": "d9b2e8f1a4c74892b1a03e56f789abc1"
-  }
+Request Body:
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
 
 Response (200 OK):
 {
   "success": true,
-  "message": "Email address verified successfully.",
+  "message": "Email verified successfully. Your account is now active.",
   "data": {
     "user": {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -175,19 +173,19 @@ Response (200 OK):
 Response (400 Bad Request):
 {
   "success": false,
-  "message": "Invalid or expired verification token."
+  "message": "Invalid verification code. Please check and try again."
 }
 
 
 --------------------------------------------------------------------------------
-2.3 Resend Email Verification
+2.3 Resend Verification OTP
 --------------------------------------------------------------------------------
-- Description:    Invalidates old tokens and sends a new verification link.
+- Description:    Invalidates old OTPs and sends a new 6-digit verification code.
 - HTTP Method:    POST
 - Authentication: Public (AllowAny)
-- Rate Limit:     Throttle protected (ResendVerificationRateThrottle)
-- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/resend-verification/
-- Localhost URL:  http://localhost:8000/api/v1/accounts/resend-verification/
+- Rate Limit:     Throttle protected (ResendVerificationRateThrottle: 3/min)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/resend-verification-otp/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/resend-verification-otp/
 
 Request Headers:
   Content-Type: application/json
@@ -200,7 +198,7 @@ Request Body:
 Response (200 OK):
 {
   "success": true,
-  "message": "Verification email has been resent successfully."
+  "message": "Verification code sent. Please check your inbox."
 }
 
 
