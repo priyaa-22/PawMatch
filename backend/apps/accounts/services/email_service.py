@@ -102,7 +102,9 @@ class BrevoAPIProvider(EmailProvider):
         try:
             with urllib.request.urlopen(req, timeout=self.DEFAULT_TIMEOUT) as response:
                 if response.status == 200:
-                    logger.info("Brevo API connectivity & credentials verified successfully.")
+                    logger.info(
+                        "Brevo API connectivity & credentials verified successfully."
+                    )
                     return {
                         "success": True,
                         "status_code": 200,
@@ -265,7 +267,6 @@ class EmailService:
             "reason": "provider_not_testable",
             "message": f"Active provider {provider.__class__.__name__} does not require/support connectivity verification.",
         }
-
 
     @classmethod
     def send_verification_otp_email(

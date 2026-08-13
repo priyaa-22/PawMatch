@@ -3,6 +3,7 @@ Management command to test Brevo API connectivity and authentication credentials
 """
 
 from django.core.management.base import BaseCommand
+
 from apps.accounts.services.email_service import EmailService
 
 

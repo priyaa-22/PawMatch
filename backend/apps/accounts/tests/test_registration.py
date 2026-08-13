@@ -580,4 +580,3 @@ class TestBrevoAPIProvider(APITestCase):
 
         # Assert User creation was rolled back (no orphan user in DB)
         assert not User.objects.filter(email="failed_email_user@example.com").exists()
-

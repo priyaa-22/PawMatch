@@ -39,7 +39,6 @@ class EmailDeliveryException(AccountsException):
     default_code = "email_delivery_failed"
 
 
-
 class InvalidTokenException(AccountsException):
     status_code = 400
     default_detail = "Verification token is invalid, expired, or already used."
