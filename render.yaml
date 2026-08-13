@@ -31,6 +31,11 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: ACCOUNTS_EMAIL_PROVIDER
+        value: "BREVO_API"
+
 
       # Network Security & Host Permissions
       - key: ALLOWED_HOSTS

@@ -505,3 +505,79 @@ class TestBrevoAPIProvider(APITestCase):
         success = EmailService.send_verification_otp_email(user=user, raw_otp="123456")
         assert success is True
         assert mock_send_email.called is True
+
+    def test_brevo_test_connection_missing_key(self):
+        """Tests test_connection() reports missing_api_key when key is empty."""
+        settings.BREVO_API_KEY = ""
+        provider = BrevoAPIProvider()
+        result = provider.test_connection()
+        assert result["success"] is False
+        assert result["status_code"] == 400
+        assert result["reason"] == "missing_api_key"
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_test_connection_invalid_key_401(self, mock_urlopen):
+        """Tests test_connection() reports invalid_api_key on HTTP 401 response."""
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="https://api.brevo.com/v3/account",
+            code=401,
+            msg="Unauthorized",
+            hdrs={},
+            fp=io.BytesIO(b'{"message": "Key not found", "code": "unauthorized"}'),
+        )
+        provider = BrevoAPIProvider()
+        result = provider.test_connection()
+        assert result["success"] is False
+        assert result["status_code"] == 401
+        assert result["reason"] == "invalid_api_key"
+        assert "xkeysib-secret-test-key-12345" not in str(result)
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_test_connection_network_failure(self, mock_urlopen):
+        """Tests test_connection() reports network_failure on URLError."""
+        mock_urlopen.side_effect = urllib.error.URLError(reason="Connection refused")
+        provider = BrevoAPIProvider()
+        result = provider.test_connection()
+        assert result["success"] is False
+        assert result["status_code"] == 503
+        assert result["reason"] == "network_failure"
+
+    @patch("urllib.request.urlopen")
+    def test_brevo_test_connection_valid_credentials_200(self, mock_urlopen):
+        """Tests test_connection() reports valid_credentials on HTTP 200 response."""
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        provider = BrevoAPIProvider()
+        result = provider.test_connection()
+        assert result["success"] is True
+        assert result["status_code"] == 200
+        assert result["reason"] == "valid_credentials"
+
+    @patch.object(EmailService, "send_verification_otp_email", return_value=False)
+    def test_registration_fails_when_email_delivery_fails(self, mock_send_email):
+        """
+        Tests registration fails with HTTP 503 and rolls back user DB creation
+        when verification email cannot be sent.
+        """
+        settings.ACCOUNTS_EMAIL_PROVIDER = "BREVO_API"
+        payload = {
+            "email": "failed_email_user@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Failed",
+            "last_name": "Email",
+        }
+        response = self.client.post(
+            reverse("accounts:register"), payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        assert response.data["success"] is False
+        assert "verification email" in response.data["message"].lower()
+
+        # Assert User creation was rolled back (no orphan user in DB)
+        assert not User.objects.filter(email="failed_email_user@example.com").exists()
+

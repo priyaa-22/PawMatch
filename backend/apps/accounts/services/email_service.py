@@ -59,17 +59,111 @@ class BrevoAPIProvider(EmailProvider):
     """
 
     API_URL = "https://api.brevo.com/v3/smtp/email"
+    ACCOUNT_URL = "https://api.brevo.com/v3/account"
     DEFAULT_TIMEOUT = 10  # seconds
+
+    def _get_api_key(self) -> str:
+        """Retrieves trimmed BREVO_API_KEY from settings."""
+        return getattr(settings, "BREVO_API_KEY", "").strip()
+
+    def test_connection(self) -> dict:
+        """
+        Safely tests Brevo API key authentication and network connectivity using GET /v3/account.
+        Distinguishes missing key, 401 Unauthorized, network errors, and 200 OK without leaking keys.
+        """
+        api_key = self._get_api_key()
+        if not api_key:
+            logger.warning(
+                "Brevo connectivity check failed: BREVO_API_KEY environment variable is missing."
+            )
+            return {
+                "success": False,
+                "status_code": 400,
+                "reason": "missing_api_key",
+                "message": "BREVO_API_KEY environment variable is missing or empty.",
+            }
+
+        logger.info(
+            "Executing Brevo API connection test",
+            extra={"configured": True, "key_length": len(api_key)},
+        )
+
+        headers = {
+            "api-key": api_key,
+            "Accept": "application/json",
+        }
+
+        req = urllib.request.Request(
+            url=self.ACCOUNT_URL,
+            headers=headers,
+            method="GET",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=self.DEFAULT_TIMEOUT) as response:
+                if response.status == 200:
+                    logger.info("Brevo API connectivity & credentials verified successfully.")
+                    return {
+                        "success": True,
+                        "status_code": 200,
+                        "reason": "valid_credentials",
+                        "message": "Brevo API credentials authenticated successfully.",
+                    }
+                return {
+                    "success": False,
+                    "status_code": response.status,
+                    "reason": "unexpected_status",
+                    "message": f"Brevo API returned unexpected HTTP status code: {response.status}",
+                }
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                logger.error(
+                    "Brevo API authentication check failed (401 Unauthorized). Check BREVO_API_KEY setting."
+                )
+                return {
+                    "success": False,
+                    "status_code": 401,
+                    "reason": "invalid_api_key",
+                    "message": "Brevo API authentication failed (401 Unauthorized). Key is invalid or revoked.",
+                }
+            logger.error(f"Brevo API check HTTPError {exc.code}: {exc.reason}")
+            return {
+                "success": False,
+                "status_code": exc.code,
+                "reason": "http_error",
+                "message": f"Brevo API connection failed with status code {exc.code}: {exc.reason}",
+            }
+        except urllib.error.URLError as exc:
+            logger.error(f"Brevo API check URLError: {exc.reason}")
+            return {
+                "success": False,
+                "status_code": 503,
+                "reason": "network_failure",
+                "message": f"Brevo API network connection failed: {exc.reason}",
+            }
+        except Exception as exc:
+            logger.error(f"Brevo API check unexpected error: {exc}")
+            return {
+                "success": False,
+                "status_code": 500,
+                "reason": "unexpected_error",
+                "message": "Unexpected error occurred while checking Brevo API credentials.",
+            }
 
     def send_email(
         self, to_email: str, subject: str, html_content: str, text_content: str
     ) -> bool:
-        api_key = getattr(settings, "BREVO_API_KEY", "")
+        api_key = self._get_api_key()
         if not api_key:
             logger.error(
                 "Failed to send email via Brevo API: BREVO_API_KEY is missing."
             )
             raise ValueError("BREVO_API_KEY environment variable is missing.")
+
+        logger.info(
+            "Dispatching email via Brevo API provider",
+            extra={"configured": True, "key_length": len(api_key)},
+        )
 
         sender_name, sender_email = parseaddr(settings.DEFAULT_FROM_EMAIL)
         if not sender_email:
@@ -118,6 +212,13 @@ class BrevoAPIProvider(EmailProvider):
                 if hasattr(exc, "read")
                 else ""
             )
+            if exc.code == 401:
+                logger.error(
+                    "Brevo API HTTPError 401: Unauthorized. Please check BREVO_API_KEY setting."
+                )
+                raise RuntimeError(
+                    "Brevo API request failed with status 401: Unauthorized"
+                ) from exc
             logger.error(
                 f"Brevo API HTTPError {exc.code}: {exc.reason}. Body: {error_body}"
             )
@@ -151,6 +252,20 @@ class EmailService:
         backend_key = accounts_config.email_provider_backend
         provider_cls = cls._provider_registry.get(backend_key, BrevoAPIProvider)
         return provider_cls()
+
+    @classmethod
+    def test_provider_connection(cls) -> dict:
+        """Runs connectivity & credential verification on active EmailProvider."""
+        provider = cls.get_provider()
+        if hasattr(provider, "test_connection"):
+            return provider.test_connection()
+        return {
+            "success": True,
+            "status_code": 200,
+            "reason": "provider_not_testable",
+            "message": f"Active provider {provider.__class__.__name__} does not require/support connectivity verification.",
+        }
+
 
     @classmethod
     def send_verification_otp_email(

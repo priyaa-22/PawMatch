@@ -31,6 +31,15 @@ class RegistrationException(AccountsException):
     default_code = "registration_failed"
 
 
+class EmailDeliveryException(AccountsException):
+    status_code = 503
+    default_detail = (
+        "Verification email could not be delivered. Please try again later."
+    )
+    default_code = "email_delivery_failed"
+
+
+
 class InvalidTokenException(AccountsException):
     status_code = 400
     default_detail = "Verification token is invalid, expired, or already used."

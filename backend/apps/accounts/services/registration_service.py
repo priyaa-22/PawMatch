@@ -16,6 +16,7 @@ from apps.accounts.constants import AuditAction, AuthMessage
 from apps.accounts.events import EventDispatcher
 from apps.accounts.exceptions import (
     EmailAlreadyVerifiedException,
+    EmailDeliveryException,
     ExpiredOTPException,
     InvalidOTPException,
     MaxOTPAttemptsExceededException,
@@ -87,9 +88,17 @@ class RegistrationService:
 
         otp_obj, raw_otp = cls.generate_email_verification_otp(user)
 
-        EmailService.send_verification_otp_email(
+        email_sent = EmailService.send_verification_otp_email(
             user=user, raw_otp=raw_otp, request=request
         )
+        if not email_sent:
+            logger.error(
+                "User registration failed: Verification email dispatch failed",
+                extra={"email": user.email},
+            )
+            raise EmailDeliveryException(
+                "Registration could not be completed because the verification email failed to send. Please try again later."
+            )
 
         EventDispatcher.dispatch_user_registered(
             user_id=user.id, email=user.email, request=request
@@ -278,9 +287,17 @@ class RegistrationService:
 
         otp_obj, raw_otp = cls.generate_email_verification_otp(user)
 
-        EmailService.send_verification_otp_email(
+        email_sent = EmailService.send_verification_otp_email(
             user=user, raw_otp=raw_otp, request=request
         )
+        if not email_sent:
+            logger.error(
+                "Resend verification OTP failed: Verification email dispatch failed",
+                extra={"user_id": str(user.id), "email": user.email},
+            )
+            raise EmailDeliveryException(
+                "Failed to resend verification email. Please try again later."
+            )
 
         AuditService.log_event(
             action=AuditAction.OTP_RESENT,
