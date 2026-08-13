@@ -23,6 +23,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ResendVerificationPage from './pages/ResendVerificationPage';
 import ProfilePage from './pages/ProfilePage';
+import ShelterOnboardingPage from './pages/ShelterOnboardingPage';
 import DashboardPage from './pages/DashboardPage';
 import RBACAdminPage from './pages/RBACAdminPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
@@ -95,6 +96,14 @@ function App() {
               element={
                 <RoleGuard>
                   <ProfilePage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/shelter/onboarding"
+              element={
+                <RoleGuard>
+                  <ShelterOnboardingPage />
                 </RoleGuard>
               }
             />

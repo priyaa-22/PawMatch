@@ -7,7 +7,7 @@ export const ShelterBanner = () => {
   const navigate = useNavigate();
 
   const handleRegisterShelter = () => {
-    navigate('/register');
+    navigate('/shelter/onboarding');
   };
 
   return (
