@@ -193,6 +193,13 @@ DEFAULT_FROM_EMAIL = env.str(
 # Brevo HTTPS API Key & Provider Selection
 BREVO_API_KEY = env.str("BREVO_API_KEY", default="")
 ACCOUNTS_EMAIL_PROVIDER = env.str("ACCOUNTS_EMAIL_PROVIDER", default="BREVO_API")
+EMAIL_VERIFICATION_MODE = env.str(
+    "EMAIL_VERIFICATION_MODE", default="BREVO_API"
+).upper()
+EMAIL_VERIFICATION_FIXED_OTP = env.str(
+    "EMAIL_VERIFICATION_FIXED_OTP", default="6767"
+).strip()
+
 
 # Django REST Framework (DRF) Configuration
 REST_FRAMEWORK = {

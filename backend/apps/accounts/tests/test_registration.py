@@ -580,3 +580,184 @@ class TestBrevoAPIProvider(APITestCase):
 
         # Assert User creation was rolled back (no orphan user in DB)
         assert not User.objects.filter(email="failed_email_user@example.com").exists()
+
+
+class TestFixedOTPMode(APITestCase):
+    """
+    Test suite for temporary FIXED OTP mode (EMAIL_VERIFICATION_MODE=FIXED).
+    Verifies fixed 6767 OTP generation, registration without external email calls,
+    successful account verification, invalid/expired/reused OTP behavior, and privacy.
+    """
+
+    def setUp(self):
+        try:
+            cache.clear()
+        except Exception:
+            pass
+        self.orig_mode = getattr(settings, "EMAIL_VERIFICATION_MODE", "BREVO_API")
+        self.orig_fixed_otp = getattr(settings, "EMAIL_VERIFICATION_FIXED_OTP", "6767")
+        self.orig_provider = getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API")
+        settings.EMAIL_VERIFICATION_MODE = "FIXED"
+        settings.EMAIL_VERIFICATION_FIXED_OTP = "6767"
+
+    def tearDown(self):
+        try:
+            cache.clear()
+        except Exception:
+            pass
+        settings.EMAIL_VERIFICATION_MODE = self.orig_mode
+        settings.EMAIL_VERIFICATION_FIXED_OTP = self.orig_fixed_otp
+        settings.ACCOUNTS_EMAIL_PROVIDER = self.orig_provider
+
+    @patch.object(BrevoAPIProvider, "send_email")
+    def test_fixed_mode_registration_succeeds_without_brevo_call(self, mock_brevo_send):
+        """Tests registration in FIXED mode succeeds without making external Brevo API calls."""
+        payload = {
+            "email": "fixed_user@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Fixed",
+            "last_name": "User",
+        }
+        response = self.client.post(
+            reverse("accounts:register"), payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["success"] is True
+        assert mock_brevo_send.called is False
+
+        # Verify OTP is NOT returned in API response
+        response_str = json.dumps(response.data)
+        assert "6767" not in response_str
+        assert "otp" not in response.data["data"]
+
+        # Assert user created in inactive state
+        user = User.objects.get(email="fixed_user@example.com")
+        assert user.is_active is False
+        assert user.is_email_verified is False
+
+    @patch.object(BrevoAPIProvider, "send_email")
+    def test_fixed_mode_verification_success_with_6767(self, mock_brevo_send):
+        """Tests verifying account with fixed OTP 6767 activates user account."""
+        reg_payload = {
+            "email": "verify_fixed@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Fixed",
+            "last_name": "Verify",
+        }
+        self.client.post(reverse("accounts:register"), reg_payload, format="json")
+
+        verify_payload = {
+            "email": "verify_fixed@example.com",
+            "otp": "6767",
+        }
+        verify_resp = self.client.post(
+            reverse("accounts:verify_email_otp"), verify_payload, format="json"
+        )
+
+        assert verify_resp.status_code == status.HTTP_200_OK
+        assert verify_resp.data["success"] is True
+
+        user = User.objects.get(email="verify_fixed@example.com")
+        assert user.is_active is True
+        assert user.is_email_verified is True
+
+    def test_fixed_mode_verification_wrong_otp_fails(self):
+        """Tests entering wrong OTP in FIXED mode fails."""
+        reg_payload = {
+            "email": "wrong_otp@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Wrong",
+            "last_name": "OTP",
+        }
+        self.client.post(reverse("accounts:register"), reg_payload, format="json")
+
+        verify_payload = {
+            "email": "wrong_otp@example.com",
+            "otp": "9999",
+        }
+        verify_resp = self.client.post(
+            reverse("accounts:verify_email_otp"), verify_payload, format="json"
+        )
+
+        assert verify_resp.status_code == status.HTTP_400_BAD_REQUEST
+        user = User.objects.get(email="wrong_otp@example.com")
+        assert user.is_active is False
+        assert user.is_email_verified is False
+
+    def test_fixed_mode_verification_expired_otp_fails(self):
+        """Tests expired fixed OTP submission fails."""
+        reg_payload = {
+            "email": "expired_fixed@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Expired",
+            "last_name": "Fixed",
+        }
+        self.client.post(reverse("accounts:register"), reg_payload, format="json")
+
+        # Expire the OTP record
+        user = User.objects.get(email="expired_fixed@example.com")
+        otp_obj = EmailVerificationOTP.objects.filter(user=user, is_active=True).first()
+        otp_obj.expires_at = timezone.now() - timedelta(minutes=1)
+        otp_obj.save()
+
+        verify_payload = {
+            "email": "expired_fixed@example.com",
+            "otp": "6767",
+        }
+        verify_resp = self.client.post(
+            reverse("accounts:verify_email_otp"), verify_payload, format="json"
+        )
+
+        assert verify_resp.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_fixed_mode_otp_cannot_be_reused(self):
+        """Tests fixed OTP 6767 cannot be reused after successful verification."""
+        reg_payload = {
+            "email": "reuse_fixed@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "Reuse",
+            "last_name": "Fixed",
+        }
+        self.client.post(reverse("accounts:register"), reg_payload, format="json")
+
+        verify_payload = {
+            "email": "reuse_fixed@example.com",
+            "otp": "6767",
+        }
+        # First verification succeeds
+        resp1 = self.client.post(
+            reverse("accounts:verify_email_otp"), verify_payload, format="json"
+        )
+        assert resp1.status_code == status.HTTP_200_OK
+
+        # Second verification with same OTP fails
+        resp2 = self.client.post(
+            reverse("accounts:verify_email_otp"), verify_payload, format="json"
+        )
+        assert resp2.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch.object(BrevoAPIProvider, "send_email", return_value=True)
+    def test_brevo_api_mode_still_uses_external_provider(self, mock_brevo_send):
+        """Tests setting EMAIL_VERIFICATION_MODE=BREVO_API restores Brevo API email dispatch path."""
+        settings.EMAIL_VERIFICATION_MODE = "BREVO_API"
+        settings.ACCOUNTS_EMAIL_PROVIDER = "BREVO_API"
+
+        reg_payload = {
+            "email": "brevo_mode_user@example.com",
+            "password": "StrongPassword123!",
+            "confirm_password": "StrongPassword123!",
+            "first_name": "BrevoMode",
+            "last_name": "User",
+        }
+        response = self.client.post(
+            reverse("accounts:register"), reg_payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert mock_brevo_send.called is True

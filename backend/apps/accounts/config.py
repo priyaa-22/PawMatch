@@ -48,6 +48,25 @@ class AccountsConfig:
         return getattr(settings, "ACCOUNTS_EMAIL_PROVIDER", "BREVO_API").upper()
 
     @property
+    def email_verification_mode(self) -> str:
+        return getattr(settings, "EMAIL_VERIFICATION_MODE", "BREVO_API").upper()
+
+    @property
+    def is_fixed_otp_mode(self) -> bool:
+        return self.email_verification_mode == "FIXED"
+
+    @property
+    def fixed_otp(self) -> str:
+        """
+        Returns configured temporary fixed OTP string.
+        Validates that it is numeric and exactly 4 digits; defaults to '6767'.
+        """
+        otp = getattr(settings, "EMAIL_VERIFICATION_FIXED_OTP", "6767").strip()
+        if not otp.isdigit() or len(otp) != 4:
+            return "6767"
+        return otp
+
+    @property
     def brevo_api_key(self) -> str:
         return getattr(settings, "BREVO_API_KEY", "")
 
