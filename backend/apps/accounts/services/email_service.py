@@ -273,8 +273,16 @@ class EmailService:
         cls, user: Any, raw_otp: str, request: Optional[Any] = None
     ) -> bool:
         """
-        Renders and dispatches 6-digit email verification OTP email.
+        Renders and dispatches email verification OTP email.
+        If EMAIL_VERIFICATION_MODE is FIXED, skips external provider delivery.
         """
+        if accounts_config.is_fixed_otp_mode:
+            logger.info(
+                "EMAIL_VERIFICATION_MODE is FIXED (Temporary Mode): Skipping external email provider call",
+                extra={"user_id": str(user.id), "email": user.email},
+            )
+            return True
+
         context = {
             "first_name": user.first_name,
             "otp": raw_otp,
@@ -313,7 +321,15 @@ class EmailService:
     def send_welcome_email(cls, user: Any, request: Optional[Any] = None) -> bool:
         """
         Renders and dispatches welcome email upon successful account activation.
+        If EMAIL_VERIFICATION_MODE is FIXED, skips external provider delivery.
         """
+        if accounts_config.is_fixed_otp_mode:
+            logger.info(
+                "EMAIL_VERIFICATION_MODE is FIXED (Temporary Mode): Skipping welcome email dispatch",
+                extra={"user_id": str(user.id), "email": user.email},
+            )
+            return True
+
         login_url = f"{accounts_config.frontend_url}/login"
         context = {
             "first_name": user.first_name,

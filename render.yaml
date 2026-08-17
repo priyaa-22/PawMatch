@@ -35,6 +35,11 @@ services:
         sync: false
       - key: ACCOUNTS_EMAIL_PROVIDER
         value: "BREVO_API"
+      - key: EMAIL_VERIFICATION_MODE
+        value: "FIXED"
+      - key: EMAIL_VERIFICATION_FIXED_OTP
+        value: "6767"
+
 
 
       # Network Security & Host Permissions

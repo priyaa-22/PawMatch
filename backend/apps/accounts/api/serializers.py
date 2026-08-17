@@ -75,16 +75,16 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class VerifyEmailOTPSerializer(serializers.Serializer):
-    """Serializer for 6-digit email verification OTP requests."""
+    """Serializer for email verification OTP requests (supports 4 to 6 numeric digits)."""
 
     email = serializers.EmailField(required=True)
-    otp = serializers.CharField(required=True, min_length=6, max_length=6)
+    otp = serializers.CharField(required=True, min_length=4, max_length=6)
 
     def validate_otp(self, value: str) -> str:
         cleaned = value.strip()
-        if not cleaned.isdigit() or len(cleaned) != 6:
+        if not cleaned.isdigit() or len(cleaned) not in (4, 6):
             raise serializers.ValidationError(
-                "Verification code must be exactly 6 numeric digits."
+                "Verification code must be numeric (4 or 6 digits)."
             )
         return cleaned
 

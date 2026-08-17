@@ -46,8 +46,12 @@ class RegistrationService:
         persists the EmailVerificationOTP model, and returns (otp_instance, raw_otp).
         Raw OTP strings are NEVER stored in the database.
         """
-        raw_otp = generate_secure_otp(6)
+        if accounts_config.is_fixed_otp_mode:
+            raw_otp = accounts_config.fixed_otp
+        else:
+            raw_otp = generate_secure_otp(6)
         otp_hash = EmailVerificationOTP.hash_otp(raw_otp)
+
         expires_at = timezone.now() + timedelta(
             minutes=accounts_config.email_verification_otp_expiry_minutes
         )
